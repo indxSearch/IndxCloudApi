@@ -1,8 +1,10 @@
 # Indx Cloud API
 
-A production-ready starter template for building a search service with **Indx Search**.
+A **ready-to-run** starter template for building a search service with **Indx Search**.
 
-This template provides a complete Blazor Server application with REST API, user authentication, and everything you need to deploy a multi-user search service.
+**Works immediately without configuration!** No Azure accounts, OAuth setup, or email services required to get started.
+
+This template provides a complete Blazor Server application with REST API, user authentication, and everything you need to deploy a multi-user search service. Try it first, configure it later!
 
 ## What's Included
 
@@ -15,10 +17,10 @@ This template provides a complete Blazor Server application with REST API, user 
 - Swagger/OpenAPI documentation
 
 **Authentication:**
-- Local accounts (username/password)
-- Microsoft OAuth (Azure AD)
-- Google OAuth
-- Email confirmation and password reset
+- Local accounts (username/password) - works immediately
+- Microsoft OAuth (Azure AD) - optional
+- Google OAuth - optional
+- Password reset via email - works via console logging (optional SMTP)
 
 **Developer Experience:**
 - Works out of the box with minimal configuration
@@ -33,29 +35,45 @@ This template provides a complete Blazor Server application with REST API, user 
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - A code editor (VS Code, Visual Studio, Rider)
 
-### Get Running in 3 Steps
+### Get Running in 2 Steps
 
-1. **Clone and restore**
+**No configuration needed!** This template works immediately without any secrets or external services.
+
+1. **Clone and run**
    ```bash
    git clone <repository-url>
    cd IndxCloudApi
-   dotnet restore
-   ```
-
-2. **Run the application**
-   ```bash
    dotnet run
    ```
 
-3. **Open your browser**
+2. **Open your browser**
    - Navigate to `https://localhost:5001`
    - Register an account at `/Account/Register`
    - Start using the search API
 
-That's it! The template uses:
-- SQLite (auto-created in `./IndxData/`)
-- Console email mode (emails logged to console)
-- Default JWT configuration (change in production)
+**That's it!** The template works out-of-the-box with:
+- ✓ Local user accounts (username/password)
+- ✓ SQLite databases (auto-created in `./IndxData/`)
+- ✓ Console email mode (emails logged to console, no SMTP needed)
+- ✓ Default JWT configuration (secure for testing, customize for production)
+
+**No Azure, OAuth, or email service required to get started!**
+
+### Testing Email Features (Console Mode)
+
+When testing password reset or other email features, check your console output. All emails are logged there:
+
+```
+========================================
+EMAIL SENT
+To: user@example.com
+Subject: Reset your password
+Body:
+Please reset your password by clicking here: <a href='https://localhost:5001/Account/ResetPassword?code=...'>link</a>
+========================================
+```
+
+You can copy the reset link directly from the console and paste it into your browser.
 
 ## Project Structure
 
@@ -73,26 +91,51 @@ IndxCloudApi/
 
 ## Configuration
 
-### Development (User Secrets)
+**The template works without any configuration!** All settings below are optional and can be configured when you're ready for production or want additional features.
 
-For local development, use User Secrets to keep sensitive data out of your repository:
+### What Works Without Configuration
+
+- ✓ **User Registration & Login** - Local accounts with username/password
+- ✓ **JWT API Authentication** - Uses default key (will show warning on startup)
+- ✓ **Email Notifications** - Logged to console (perfect for testing)
+- ✓ **Password Reset** - Works via console emails
+- ✓ **API Key Generation** - Full JWT token management
+
+### Optional Configuration (When You're Ready)
+
+#### 1. Production JWT Key (Recommended for Production)
 
 ```bash
-# Required: Set a secure JWT key (minimum 32 characters)
+# Set a custom JWT key for production security
 dotnet user-secrets set "Jwt:Key" "your-secret-key-minimum-32-characters-here"
+```
 
-# Optional: Configure OAuth providers
+#### 2. OAuth Providers (Optional - Social Login)
+
+Enable Microsoft or Google authentication:
+
+```bash
+# Microsoft OAuth
 dotnet user-secrets set "Authentication:Microsoft:ClientId" "your-client-id"
 dotnet user-secrets set "Authentication:Microsoft:ClientSecret" "your-client-secret"
 
-# Optional: Configure production email service
+# Google OAuth
+dotnet user-secrets set "Authentication:Google:ClientId" "your-client-id"
+dotnet user-secrets set "Authentication:Google:ClientSecret" "your-client-secret"
+```
+
+See detailed guide: [OAuth Setup](docs/OAUTH_SETUP.md)
+
+#### 3. Production Email Service (Optional - Real Emails)
+
+Configure Azure Communication Services for sending real emails:
+
+```bash
 dotnet user-secrets set "Email:Provider" "AzureCommunicationServices"
 dotnet user-secrets set "Email:AzureCommunicationServices:ConnectionString" "your-connection-string"
 ```
 
-See detailed guides:
-- [OAuth Setup](docs/OAUTH_SETUP.md) - Microsoft and Google authentication
-- [Email Setup](docs/EMAIL_SETUP.md) - Azure Communication Services or custom providers
+See detailed guide: [Email Setup](docs/EMAIL_SETUP.md)
 
 ### Production (Environment Variables)
 
@@ -150,19 +193,26 @@ dotnet ef database update
 
 ## Security
 
+**Default Configuration (Development/Testing):**
+- ✓ Safe for local development and testing
+- ✓ Uses a default JWT key (you'll see a warning on startup)
+- ✓ No secrets exposed in git
+- ✓ HTTPS enabled by default
+
 **Password Requirements:**
 - Minimum 8 characters
 - Uppercase, lowercase, digit, and special character required
 
 **JWT Tokens:**
 - Configurable expiration (30-365 days)
-- Secure key required (minimum 32 characters)
+- Default key is secure for testing, but should be customized for production
 
-**Best Practices:**
-- Never commit secrets to git (use `.gitignore`)
+**Production Best Practices:**
+- Change the JWT key (see Configuration section above)
+- Never commit secrets to git
 - Use User Secrets for development
 - Use Azure Key Vault or environment variables for production
-- Enable HTTPS in production (included by default)
+- Enable HTTPS (included by default)
 - Rotate secrets regularly
 
 ## Deployment

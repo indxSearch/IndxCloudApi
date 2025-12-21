@@ -100,7 +100,22 @@ public class Program
         // JWT Authentication for API
         var jwtkey = builder.Configuration["Jwt:Key"];
         if (string.IsNullOrEmpty(jwtkey))
-            throw new InvalidOperationException("JWT Key is not configured");
+        {
+            throw new InvalidOperationException("JWT Key is not configured. Please set a secure key in appsettings.json or user secrets.");
+        }
+
+        // Warn if using the default/insecure key
+        var defaultKey = "your-secret-key-minimum-32-characters-change-in-production";
+        if (jwtkey == defaultKey)
+        {
+            Console.WriteLine("⚠ WARNING: Using default JWT key from appsettings.json");
+            Console.WriteLine("⚠ This is OK for development/testing, but MUST be changed in production!");
+            Console.WriteLine("⚠ Set a secure key using: dotnet user-secrets set \"Jwt:Key\" \"your-secure-key-here\"");
+        }
+        else
+        {
+            Console.WriteLine("✓ JWT authentication configured with custom key");
+        }
 
         authBuilder.AddJwtBearer(options =>
         {
