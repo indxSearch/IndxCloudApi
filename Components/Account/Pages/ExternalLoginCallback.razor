@@ -1,0 +1,126 @@
+﻿@page "/Account/ExternalLogin/Callback"
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@using IndxCloudApi.Data
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@inject ILogger<ExternalLoginCallback> Logger
+
+<PageTitle>External Login Callback</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Processing...</span>
+                    </div>
+                    <h5>Processing external login...</h5>
+                    <p class="text-muted">Please wait while we complete your sign-in.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get the information about the user from the external login provider
+        var info = await SignInManager.GetExternalLoginInfoAsync();
+        if (info == null)
+        {
+            Logger.LogWarning("Error loading external login information");
+            NavigationManager.NavigateTo("/Account/Login");
+            return;
+        }
+
+        Logger.LogInformation("Processing external login for provider: {Provider}", info.LoginProvider);
+
+        // Sign in the user with this external login provider if the user already has a login
+        var result = await SignInManager.ExternalLoginSignInAsync(
+            info.LoginProvider,
+            info.ProviderKey,
+            isPersistent: false,
+            bypassTwoFactor: true);
+
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("{Name} logged in with {LoginProvider} provider.",
+                info.Principal.Identity?.Name, info.LoginProvider);
+
+            // ✅ Redirect to API Key page after successful login
+            NavigationManager.NavigateTo("/Account/ApiKey");
+            return;
+        }
+
+        if (result.IsLockedOut)
+        {
+            Logger.LogWarning("User account locked out");
+            NavigationManager.NavigateTo("/Account/Lockout");
+            return;
+        }
+
+        // If the user does not have an account, create one
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
+        {
+            Logger.LogWarning("Email claim not found from external provider {Provider}", info.LoginProvider);
+            NavigationManager.NavigateTo("/Account/Login");
+            return;
+        }
+
+        Logger.LogInformation("Creating new user account for email: {Email}", email);
+
+        var user = await UserManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            // Create new user
+            user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true // Auto-confirm for external logins
+            };
+
+            var createResult = await UserManager.CreateAsync(user);
+            if (!createResult.Succeeded)
+            {
+                Logger.LogError("Failed to create user from external login: {Errors}",
+                    string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                NavigationManager.NavigateTo("/Account/Login");
+                return;
+            }
+
+            // Add to default role
+            await UserManager.AddToRoleAsync(user, "User");
+            Logger.LogInformation("Created new user from external login: {Email}", email);
+        }
+
+        // Add the external login to the user
+        var addLoginResult = await UserManager.AddLoginAsync(user, info);
+        if (addLoginResult.Succeeded)
+        {
+            await SignInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
+            Logger.LogInformation("User {Email} logged in with {Provider} provider.",
+                email, info.LoginProvider);
+
+            // ✅ Redirect to API Key page after successful registration + login
+            NavigationManager.NavigateTo("/Account/ApiKey");
+        }
+        else
+        {
+            Logger.LogError("Failed to add external login to user: {Errors}",
+                string.Join(", ", addLoginResult.Errors.Select(e => e.Description)));
+            NavigationManager.NavigateTo("/Account/Login");
+        }
+    }
+}

@@ -1,0 +1,342 @@
+﻿@page "/Account/ApiKey"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.IdentityModel.Tokens
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@using System.Text
+@using IndxCloudApi.Data
+@attribute [Authorize]
+@inject UserManager<ApplicationUser> UserManager
+@inject IConfiguration Configuration
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+@inject ILogger<ApiKey> Logger
+
+<PageTitle>API Key / JWT Token</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔑 Your API Token</h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> @errorMessage
+                        </div>
+                    }
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Token Expiration:</label>
+                        <select class="form-select" @bind="selectedExpirationDays" disabled="@isLoading">
+                            <option value="30">30 Days</option>
+                            <option value="90">90 Days (Recommended)</option>
+                            <option value="180">180 Days (6 Months)</option>
+                            <option value="365">365 Days (1 Year)</option>
+                        </select>
+                        <small class="text-muted">Choose how long your API token will remain valid.</small>
+                    </div>
+
+                    @if (string.IsNullOrEmpty(jwtToken))
+                    {
+                        <button class="btn-primary btn-large" @onclick="GenerateToken" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Generating...</span>
+                            }
+                            else
+                            {
+                                <span>🔑 Generate API Token</span>
+                            }
+                        </button>
+                    }
+                    else if (!string.IsNullOrEmpty(jwtToken))
+                    {
+                        <div class="alert alert-success">
+                            <h5>✅ Token Generated Successfully!</h5>
+                            <p class="mb-0">Use this token to authenticate your API requests.</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Your JWT Token:</label>
+                            <div class="input-group">
+                                <textarea class="form-control font-monospace"
+                                      style="font: var(--text-xs);"
+                                      rows="6"
+                                      readonly>@jwtToken</textarea>
+                                <button class="btn-secondary"
+                                        type="button"
+                                        @onclick="CopyToClipboard">
+                                    📋 Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (tokenExpiry.HasValue)
+                        {
+                            <div class="alert alert-info">
+                                <strong>🕐 Expires:</strong> @tokenExpiry.Value.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                                <br />
+                                <small>This token is valid for @expirationDaysUsed days from generation.</small>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(copyMessage))
+                        {
+                            <div class="alert alert-success">
+                                @copyMessage
+                            </div>
+                        }
+
+                        <hr />
+
+                        <h5>📖 How to use this token:</h5>
+                        <div class="accordion" id="examplesAccordion">
+                            <!-- cURL Example -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="btn-ghost accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#curlExample">
+                                        cURL Example
+                                    </button>
+                                </h2>
+                                <div id="curlExample" class="accordion-collapse collapse show" data-bs-parent="#examplesAccordion">
+                                    <div class="accordion-body">
+                                        <pre class="bg-dark text-light p-3 rounded"><code>curl -X PUT "https://localhost:5001/api/CreateOrOpen/myDataset/1" \
+      -H "Authorization: Bearer @jwtToken"</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- JavaScript Example -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="btn-ghost accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#jsExample">
+                                        JavaScript / Fetch Example
+                                    </button>
+                                </h2>
+                                <div id="jsExample" class="accordion-collapse collapse" data-bs-parent="#examplesAccordion">
+                                    <div class="accordion-body">
+                                        <pre class="bg-dark text-light p-3 rounded"><code>fetch('https://localhost:5001/api/CreateOrOpen/myDataset/1', {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer @jwtToken'
+      }
+    })
+    .then(response => response.json())
+    .then(data => console.log(data));</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- C# Example -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="btn-ghost accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#csharpExample">
+                                        C# HttpClient Example
+                                    </button>
+                                </h2>
+                                <div id="csharpExample" class="accordion-collapse collapse" data-bs-parent="#examplesAccordion">
+                                    <div class="accordion-body">
+                                        <pre class="bg-dark text-light p-3 rounded"><code>var client = new HttpClient();
+    client.DefaultRequestHeaders.Authorization = 
+        new AuthenticationHeaderValue("Bearer", "@jwtToken");
+
+    var response = await client.PutAsync(
+        "https://localhost:5001/api/CreateOrOpen/myDataset/1", 
+        null);
+
+    var result = await response.Content.ReadAsStringAsync();</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Python Example -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="btn-ghost accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pythonExample">
+                                        Python Requests Example
+                                    </button>
+                                </h2>
+                                <div id="pythonExample" class="accordion-collapse collapse" data-bs-parent="#examplesAccordion">
+                                    <div class="accordion-body">
+                                        <pre class="bg-dark text-light p-3 rounded"><code>import requests
+
+    headers = {
+        'Authorization': f'Bearer @jwtToken'
+    }
+
+    response = requests.put(
+        'https://localhost:5001/api/CreateOrOpen/myDataset/1',
+        headers=headers
+    )
+
+    print(response.json())</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="mt-4" />
+
+                        <div class="d-flex gap-2">
+                            <button class="btn-secondary" @onclick="GenerateToken">
+                                🔄 Regenerate Token
+                            </button>
+                            <a href="/swagger" class="btn btn-secondary">
+                                📚 View API Documentation
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? jwtToken;
+    private DateTime? tokenExpiry;
+    private string? copyMessage;
+    private string? errorMessage;
+    private bool isLoading = false;
+    private int selectedExpirationDays = 90;
+    private int expirationDaysUsed = 90;
+
+    protected override Task OnInitializedAsync()
+    {
+        // Don't auto-generate - let user choose expiration and click button
+        return Task.CompletedTask;
+    }
+
+    private async Task GenerateToken()
+    {
+        isLoading = true;
+        copyMessage = null;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                errorMessage = "You must be logged in to generate a token.";
+                Logger.LogWarning("Unauthorized token generation attempt");
+                isLoading = false;
+                return;
+            }
+
+            var email = user.FindFirst(ClaimTypes.Email)?.Value
+                        ?? user.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                errorMessage = "Unable to determine user email.";
+                Logger.LogWarning("Email claim not found for authenticated user");
+                isLoading = false;
+                return;
+            }
+
+            var appUser = await UserManager.FindByEmailAsync(email);
+            if (appUser == null)
+            {
+                errorMessage = "User not found in database.";
+                Logger.LogWarning("User {Email} not found in database", email);
+                isLoading = false;
+                return;
+            }
+
+            jwtToken = GenerateJwtToken(appUser, selectedExpirationDays);
+            tokenExpiry = DateTime.UtcNow.AddDays(selectedExpirationDays);
+            expirationDaysUsed = selectedExpirationDays;
+
+            Logger.LogInformation("JWT token generated for user {Email} with {Days} days expiration", email, selectedExpirationDays);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred while generating the token.";
+            Logger.LogError(ex, "Error generating JWT token");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GenerateJwtToken(ApplicationUser user, int expirationDays)
+    {
+        var jwtKey = Configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(jwtKey))
+        {
+            throw new InvalidOperationException("JWT Key is not configured");
+        }
+
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Email, user.Email ?? ""),
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Name, user.UserName ?? user.Email ?? ""),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        // Add roles
+        var roles = UserManager.GetRolesAsync(user).Result;
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        var token = new JwtSecurityToken(
+            issuer: Configuration["Jwt:Issuer"],
+            audience: Configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(expirationDays),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task CopyToClipboard()
+    {
+        Logger.LogInformation("CopyToClipboard method called!"); // DEBUG
+
+        if (!string.IsNullOrEmpty(jwtToken))
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("copyToClipboard", jwtToken);
+                copyMessage = "✅ Token copied to clipboard!";
+                Logger.LogInformation("Token copied to clipboard");
+                StateHasChanged();
+                await Task.Delay(3000);
+                copyMessage = null;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to copy to clipboard");
+                copyMessage = "❌ Failed to copy. Please copy manually.";
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            Logger.LogWarning("jwtToken is empty!"); // DEBUG
+        }
+    }
+}

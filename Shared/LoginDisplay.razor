@@ -1,0 +1,16 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<AuthorizeView>
+    <Authorized>
+        <a href="Account/Manage" class="btn btn-secondary">@context.User.Identity?.Name</a>
+        <form method="post" action="Account/Logout">
+            <AntiforgeryToken />
+            <input type="hidden" name="returnUrl" value="" />
+            <button type="submit" class="btn-secondary">Log out</button>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <a href="Account/Register" class="btn btn-secondary">Register</a>
+        <a href="Account/Login" class="btn btn-secondary">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>

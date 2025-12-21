@@ -1,0 +1,108 @@
+@page "/Account/ConfirmEmail"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Text
+@using IndxCloudApi.Data
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+
+<PageTitle>Confirm Email</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Confirm Email</h3>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3">Confirming your email...</p>
+                        </div>
+                    }
+                    else if (success)
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <h4 class="alert-heading">Email Confirmed!</h4>
+                            <p>Thank you for confirming your email address.</p>
+                            <hr>
+                            <p class="mb-0">
+                                <a href="/Account/Login" class="btn btn-primary">Go to Login</a>
+                                <a href="/" class="btn btn-secondary">Go to Home</a>
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">Error</h4>
+                            <p>@errorMessage</p>
+                            <hr>
+                            <p class="mb-0">
+                                <a href="/" class="btn btn-secondary">Go to Home</a>
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoading = true;
+    private bool success = false;
+    private string? errorMessage;
+
+    [SupplyParameterFromQuery]
+    public string? UserId { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Code { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(UserId) || string.IsNullOrEmpty(Code))
+        {
+            errorMessage = "Invalid email confirmation link.";
+            isLoading = false;
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(UserId);
+        if (user == null)
+        {
+            errorMessage = $"Unable to load user with ID '{UserId}'.";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+            var result = await UserManager.ConfirmEmailAsync(user, decodedCode);
+
+            if (result.Succeeded)
+            {
+                success = true;
+            }
+            else
+            {
+                errorMessage = "Error confirming your email. " + string.Join(", ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred while confirming your email: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

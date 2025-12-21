@@ -1,0 +1,222 @@
+﻿@page "/Account/Login"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Web
+@using IndxCloudApi.Data
+@using System.ComponentModel.DataAnnotations
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject ILogger<Login> Logger
+
+<PageTitle>Log in</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Log in</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Local Account Login -->
+                        <div class="col-md-6">
+                            <section>
+                                <h4>Use a local account</h4>
+                                <hr />
+
+                                @if (!string.IsNullOrEmpty(errorMessage))
+                                {
+                                    <div class="alert alert-danger" role="alert">
+                                        @errorMessage
+                                    </div>
+                                }
+
+                                <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                                    <DataAnnotationsValidator />
+                                    <ValidationSummary class="text-danger" role="alert" />
+
+                                    <div style="margin-bottom: 20px;">
+                                        <label for="email">Email *</label>
+                                        <InputText @bind-Value="Input.Email"
+                                                   type="email"
+                                                   autocomplete="username"
+                                                   placeholder="name@example.com"
+                                                   id="email" />
+                                        <ValidationMessage For="() => Input.Email" />
+                                    </div>
+
+                                    <div style="margin-bottom: 20px;">
+                                        <label for="password">Password *</label>
+                                        <InputText type="password"
+                                                   @bind-Value="Input.Password"
+                                                   autocomplete="current-password"
+                                                   placeholder="password"
+                                                   id="password" />
+                                        <ValidationMessage For="() => Input.Password" />
+                                    </div>
+
+                                    <div class="form-check mb-3">
+                                        <InputCheckbox @bind-Value="Input.RememberMe"
+                                                       class="form-check-input"
+                                                       id="rememberMe" />
+                                        <label class="form-check-label" for="rememberMe">
+                                            Remember me
+                                        </label>
+                                    </div>
+
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn-primary btn-large">Log in</button>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <p>
+                                            <a href="/Account/ForgotPassword">Forgot your password?</a>
+                                        </p>
+                                        <p>
+                                            <a href="/Account/Register?returnUrl=@ReturnUrl">Register as a new user</a>
+                                        </p>
+                                        <p>
+                                            <a href="/Account/ResendEmailConfirmation">Resend email confirmation</a>
+                                        </p>
+                                    </div>
+                                </EditForm>
+                            </section>
+                        </div>
+
+                        <!-- External Login -->
+                        <div class="col-md-6">
+                            <section>
+                                <h4>Use another service</h4>
+                                <hr />
+
+                                @if (externalLogins == null)
+                                {
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                }
+                                else if (externalLogins.Count == 0)
+                                {
+                                    <div class="alert alert-info">
+                                        <p>There are no external authentication services configured.</p>
+                                        <p class="mb-0">
+                                            See the
+                                            <a href="https://learn.microsoft.com/aspnet/core/security/authentication/social/">
+                                                ASP.NET Core documentation
+                                            </a>
+                                            for details on setting up external authentication providers.
+                                        </p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="d-grid gap-2">
+                                        @foreach (var provider in externalLogins)
+                                        {
+                                            <form action="Account/PerformExternalLogin" method="post">
+                                                <AntiforgeryToken />
+                                                <input type="hidden" name="provider" value="@provider.Name" />
+                                                <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+                                                <button type="submit" class="btn-secondary btn-large w-100">
+                                                    @if (provider.Name == "Google")
+                                                    {
+                                                        <span>🔍 Sign in with Google</span>
+                                                    }
+                                                    else if (provider.Name == "Microsoft")
+                                                    {
+                                                        <span>Ⓜ️ Sign in with Microsoft</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Sign in with @provider.DisplayName</span>
+                                                    }
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+    private IList<AuthenticationScheme>? externalLogins;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get available external authentication schemes
+        externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+        Logger.LogInformation("Login page loaded. Found {Count} external login providers", externalLogins.Count);
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    private async Task LoginUser()
+    {
+        // Sign in the user with password
+        var result = await SignInManager.PasswordSignInAsync(
+            Input.Email,
+            Input.Password,
+            Input.RememberMe,
+            lockoutOnFailure: false);
+
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User {Email} logged in successfully", Input.Email);
+
+            // ✅ ENDRING: Redirect til API Key page i stedet for home
+            NavigationManager.NavigateTo("/Account/ApiKey", forceLoad: true);
+        }
+        else if (result.RequiresTwoFactor)
+        {
+            NavigationManager.NavigateTo($"/Account/LoginWith2fa?returnUrl={ReturnUrl}", forceLoad: true);
+        }
+        else if (result.IsLockedOut)
+        {
+            Logger.LogWarning("User {Email} account locked out", Input.Email);
+            NavigationManager.NavigateTo("/Account/Lockout");
+        }
+        else
+        {
+            Logger.LogWarning("Invalid login attempt for {Email}", Input.Email);
+            errorMessage = "Error: Invalid login attempt.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}

@@ -1,0 +1,18 @@
+﻿<nav class="nav">
+    <NavLink href="" Match="NavLinkMatch.All">
+        Home
+    </NavLink>
+    <AuthorizeView>
+        <Authorized>
+            <NavLink href="Account/ApiKey">
+                API Key
+            </NavLink>
+            <NavLink href="Account/Manage">
+                Account
+            </NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <NavLink href="swagger">
+        API Docs
+    </NavLink>
+</nav>

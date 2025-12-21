@@ -1,0 +1,398 @@
+using IndxCloudApi.Data;
+using IndxCloudApi.Models;
+using IndxCloudApi.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
+using System.Text.Json;
+using Utilities;
+
+namespace IndxCloudApi;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        // ============================================
+        // RAZOR COMPONENTS (Blazor Server UI)
+        // ============================================
+        builder.Services.AddRazorComponents()
+            .AddInteractiveServerComponents();
+
+        builder.Services.AddCascadingAuthenticationState();
+        builder.Services.AddScoped<Components.Account.IdentityUserAccessor>();
+        builder.Services.AddScoped<Components.Account.IdentityRedirectManager>();
+        builder.Services.AddScoped<AuthenticationStateProvider, Components.Account.IdentityRevalidatingAuthenticationStateProvider>();
+
+        // ============================================
+        // DATABASE CONFIGURATION
+        // ============================================
+        var identityConnectionString = ConnectionStringHelper.GetIdentityConnectionString(builder.Configuration);
+        Console.WriteLine($"Using Identity database: {ConnectionStringHelper.ExtractDbPath(identityConnectionString)}");
+
+        ConnectionStringHelper.EnsureDatabaseDirectoryExists(identityConnectionString);
+
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlite(identityConnectionString));
+
+        builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+        // ============================================
+        // IDENTITY CONFIGURATION
+        // ============================================
+        // EMAIL SERVICE CONFIGURATION (Optional - configurable)
+        // ============================================
+        var emailProvider = builder.Configuration["Email:Provider"]?.ToLower() ?? "console";
+
+        switch (emailProvider)
+        {
+            case "azurecommunicationservices":
+            case "acs":
+                var acsConnectionString = builder.Configuration["Email:AzureCommunicationServices:ConnectionString"];
+                if (!string.IsNullOrEmpty(acsConnectionString))
+                {
+                    builder.Services.AddTransient<IEmailSender, AzureCommunicationEmailSender>();
+                    Console.WriteLine("✓ Email configured: Azure Communication Services");
+                }
+                else
+                {
+                    builder.Services.AddTransient<IEmailSender, ConsoleEmailSender>();
+                    Console.WriteLine("⚠ Azure Communication Services not configured, using Console mode");
+                }
+                break;
+
+            case "console":
+            default:
+                builder.Services.AddTransient<IEmailSender, ConsoleEmailSender>();
+                Console.WriteLine("ℹ Email configured: Console mode (emails logged to console)");
+                break;
+        }
+
+        // ============================================
+        // DUAL AUTHENTICATION: Cookies + JWT + External
+        // ============================================
+
+        // Identity registration (includes cookie authentication automatically)
+        builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+        {
+            options.SignIn.RequireConfirmedAccount = false;
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequiredLength = 8;
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
+
+        // Configure Authentication with multiple schemes
+        var authBuilder = builder.Services.AddAuthentication();
+
+        // JWT Authentication for API
+        var jwtkey = builder.Configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(jwtkey))
+            throw new InvalidOperationException("JWT Key is not configured");
+
+        authBuilder.AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtkey)),
+                ValidateIssuer = true,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ClockSkew = TimeSpan.Zero
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                    {
+                        context.Response.Headers.Append("Token-Expired", "true");
+                    }
+                    return Task.CompletedTask;
+                }
+            };
+        });
+
+        // Google Authentication (Optional - configure in appsettings.json or User Secrets)
+        var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+        var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        if (!string.IsNullOrEmpty(googleClientId) &&
+            !string.IsNullOrEmpty(googleClientSecret) &&
+            !googleClientId.StartsWith("your-"))
+        {
+            authBuilder.AddGoogle(options =>
+            {
+                options.ClientId = googleClientId;
+                options.ClientSecret = googleClientSecret;
+                options.CallbackPath = "/signin-google";
+
+                // Optional: Request additional scopes
+                options.Scope.Add("profile");
+                options.Scope.Add("email");
+
+                // Save tokens for later use
+                options.SaveTokens = true;
+            });
+
+            Console.WriteLine("✓ Google authentication configured");
+        }
+        else
+        {
+            Console.WriteLine("ℹ Google authentication not configured (optional)");
+        }
+
+        // Microsoft Authentication (Optional - configure in appsettings.json or User Secrets)
+        var microsoftClientId = builder.Configuration["Authentication:Microsoft:ClientId"];
+        var microsoftClientSecret = builder.Configuration["Authentication:Microsoft:ClientSecret"];
+        if (!string.IsNullOrEmpty(microsoftClientId) &&
+            !string.IsNullOrEmpty(microsoftClientSecret) &&
+            !microsoftClientId.StartsWith("your-"))
+        {
+            authBuilder.AddMicrosoftAccount(options =>
+            {
+                options.ClientId = microsoftClientId;
+                options.ClientSecret = microsoftClientSecret;
+                options.CallbackPath = "/signin-microsoft";
+
+                // Optional: Request additional scopes
+                options.Scope.Add("User.Read");
+
+                // Save tokens for later use
+                options.SaveTokens = true;
+            });
+
+            Console.WriteLine("✓ Microsoft authentication configured");
+        }
+        else
+        {
+            Console.WriteLine("ℹ Microsoft authentication not configured (optional)");
+        }
+
+        // ============================================
+        // SWAGGER CONFIGURATION
+        // ============================================
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Version = "v4.1",
+                Title = "Indx Cloud API",
+                Description = "JWT Authenticated Web API for Indx Search",
+                Contact = new OpenApiContact
+                {
+                    Name = "Indx",
+                    Email = "post@indx.co",
+                    Url = new Uri("https://indx.co")
+                }
+            });
+
+            var filePath = Path.Combine(AppContext.BaseDirectory, "IndxCloudApi.xml");
+            if (File.Exists(filePath))
+            {
+                c.IncludeXmlComments(filePath);
+            }
+
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "JWT Authorization header using the Bearer scheme."
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    new string[] {}
+                }
+            });
+        });
+
+        // ============================================
+        // CONTROLLERS & API CONFIGURATION
+        // ============================================
+        builder.Services.AddControllers(options =>
+        {
+            options.InputFormatters.Add(new TextPlainInputFormatter());
+        })
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.IncludeFields = true;
+            options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        });
+
+        builder.Services.Configure<KestrelServerOptions>(options =>
+        {
+            options.AllowSynchronousIO = true;
+        });
+
+        builder.Services.Configure<IISServerOptions>(options =>
+        {
+            options.AllowSynchronousIO = true;
+        });
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("NewPolicy", builder =>
+                builder.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader());
+        });
+
+        builder.WebHost.ConfigureKestrel(serverOptions =>
+        {
+            serverOptions.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+            serverOptions.Limits.MaxRequestBodySize = 2_000_000_000;
+            serverOptions.AllowSynchronousIO = true;
+        });
+
+        var app = builder.Build();
+
+        // ============================================
+        // DATABASE INITIALIZATION
+        // ============================================
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            var logger = services.GetRequiredService<ILogger<Program>>();
+
+            try
+            {
+                var context = services.GetRequiredService<ApplicationDbContext>();
+
+                // Ensure database is created
+                context.Database.EnsureCreated();
+
+                // Enable WAL mode for better concurrency
+                context.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+                context.Database.ExecuteSqlRaw("PRAGMA busy_timeout=5000;");
+
+                logger.LogInformation("Identity database initialized at: {Path}",
+                    ConnectionStringHelper.ExtractDbPath(identityConnectionString));
+
+                // Seed initial data
+                SeedData(services).Wait();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error initializing Identity database");
+            }
+        }
+
+        // ============================================
+        // HTTP PIPELINE CONFIGURATION
+        // ============================================
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseExceptionHandler("/Error");
+            app.UseHsts();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+        app.UseRouting();
+
+        app.UseCors("NewPolicy");
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.UseAntiforgery();
+
+
+        // ============================================
+        // ENDPOINT MAPPING
+        // ============================================
+
+        // Map Blazor Components (UI)
+        app.MapRazorComponents<App>()
+            .AddInteractiveServerRenderMode();
+
+        // Map Identity endpoints (login, register, etc.)
+        app.MapAdditionalIdentityEndpoints();
+
+        // Map API Controllers
+        app.MapControllers();
+
+        // Swagger UI
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Indx Cloud API v4.1");
+            c.RoutePrefix = "swagger";
+        });
+
+        // ============================================
+        // INTERNAL API INITIALIZATION
+        // ============================================
+        var searchConnectionString = ConnectionStringHelper.GetSearchDataConnectionString(builder.Configuration);
+        ConnectionStringHelper.EnsureDatabaseDirectoryExists(searchConnectionString);
+        IndxCloudInternalApi.StartUpSystem(searchConnectionString);
+
+        app.Run();
+    }
+
+    // ============================================
+    // SEED DATA METHOD
+    // ============================================
+    private static async Task SeedData(IServiceProvider services)
+    {
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        // Create roles
+        string[] roleNames = { "Admin", "User", "ApiUser" };
+        foreach (var roleName in roleNames)
+        {
+            if (!await roleManager.RoleExistsAsync(roleName))
+            {
+                await roleManager.CreateAsync(new IdentityRole(roleName));
+                logger.LogInformation("Created role: {RoleName}", roleName);
+            }
+        }
+
+        // Create admin user
+        var adminEmail = "admin@indx.co";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        if (adminUser == null)
+        {
+            adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
+
+            var result = await userManager.CreateAsync(adminUser, "Admin123!@#");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+                logger.LogInformation("Admin user created: {Email}", adminEmail);
+            }
+        }
+    }
+}

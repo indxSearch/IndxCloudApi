@@ -1,0 +1,59 @@
+@page "/Account/RegisterConfirmation"
+@using Microsoft.AspNetCore.Identity
+@using IndxCloudApi.Data
+@inject UserManager<ApplicationUser> UserManager
+
+<PageTitle>Register Confirmation</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Registration Successful</h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Email))
+                    {
+                        <div class="alert alert-info" role="alert">
+                            <h4 class="alert-heading">Please check your email</h4>
+                            <p>
+                                We've sent a confirmation email to <strong>@Email</strong>.
+                            </p>
+                            <p>
+                                Please check your inbox and click the confirmation link to activate your account.
+                            </p>
+                            <hr>
+                            <p class="mb-0">
+                                <small class="text-muted">
+                                    Didn't receive the email? Check your spam folder or contact support.
+                                </small>
+                            </p>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/Account/Login" class="btn btn-primary">Go to Login</a>
+                            <a href="/" class="btn btn-secondary">Go to Home</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <p>Invalid registration confirmation request.</p>
+                        </div>
+                        <div class="text-center">
+                            <a href="/" class="btn btn-secondary">Go to Home</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+}

@@ -1,0 +1,165 @@
+@page "/Account/Manage"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Web
+@using IndxCloudApi.Data
+@attribute [Authorize]
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Manage Account</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h2>Manage Your Account</h2>
+            <p class="text-muted">Manage your account settings and preferences.</p>
+            <hr />
+
+            @if (user != null)
+            {
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Account Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">Email</dt>
+                            <dd class="col-sm-9">@user.Email</dd>
+
+                            <dt class="col-sm-3">Username</dt>
+                            <dd class="col-sm-9">@user.UserName</dd>
+
+                            <dt class="col-sm-3">Email Confirmed</dt>
+                            <dd class="col-sm-9">
+                                @if (user.EmailConfirmed)
+                                {
+                                    <span class="badge bg-success">Confirmed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning">Not Confirmed</span>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-3">Two-Factor Auth</dt>
+                            <dd class="col-sm-9">
+                                @if (user.TwoFactorEnabled)
+                                {
+                                    <span class="badge bg-success">Enabled</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Disabled</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Account Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="/Account/ApiKey" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">API Key / JWT Token</h6>
+                                    <span class="oi oi-key"></span>
+                                </div>
+                                <p class="mb-1 text-muted">Generate and manage your API access token</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-danger mt-3">
+                    <div class="card-header bg-danger text-white">
+                        <h5>Danger Zone</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Delete Account</h6>
+                        <p class="text-muted mb-3">
+                            Once you delete your account, there is no going back. This will permanently delete your account and all associated data.
+                        </p>
+
+                        @if (showDeleteConfirmation)
+                        {
+                            <div class="alert alert-danger">
+                                <p><strong>Are you absolutely sure?</strong></p>
+                                <p>This action cannot be undone. Type your email address to confirm:</p>
+                                <input type="text" class="form-control mb-2" @bind="confirmEmail" @bind:event="oninput" placeholder="Enter your email" />
+                                <div class="d-flex gap-2">
+                                    @if (CanDeleteAccount)
+                                    {
+                                        <form action="Account/Manage/DeleteAccount" method="post">
+                                            <AntiforgeryToken />
+                                            <button type="submit" class="btn-danger">
+                                                Yes, Delete My Account
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-danger" disabled>
+                                            Yes, Delete My Account
+                                        </button>
+                                    }
+                                    <button class="btn-secondary" @onclick="CancelDelete">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="btn-secondary" @onclick="ShowDeleteConfirmation">
+                                Delete My Account
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <p>Loading account information...</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private ApplicationUser? user;
+    private bool showDeleteConfirmation = false;
+    private string confirmEmail = "";
+
+    private bool CanDeleteAccount => user != null && confirmEmail.Trim().ToLower() == user.Email?.ToLower();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userName = authState.User.Identity?.Name;
+
+        if (userName != null)
+        {
+            user = await UserManager.FindByNameAsync(userName);
+        }
+    }
+
+    private void ShowDeleteConfirmation()
+    {
+        showDeleteConfirmation = true;
+        confirmEmail = "";
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirmation = false;
+        confirmEmail = "";
+    }
+}
