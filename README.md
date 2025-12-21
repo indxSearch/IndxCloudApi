@@ -217,15 +217,54 @@ dotnet ef database update
 
 ## Deployment
 
-### Azure App Service
+### Azure App Service (Zero Configuration!)
 
-1. Create an App Service in Azure Portal
-2. Configure Application Settings with your secrets (use double underscore notation)
-3. Deploy:
+**This template works on Azure without any configuration!** Just deploy and run.
+
+#### Deploy Steps:
+
+1. **Create App Service** in Azure Portal
+   - Choose **.NET 9** runtime
+   - Any tier (Free F1 works for testing)
+
+2. **Configure Environment** (Important!)
+   - Go to **Configuration → General settings**
+   - Set **Stack**: .NET
+   - Set **Major version**: .NET 9
+   - Set **ASPNETCORE_ENVIRONMENT** = `Production` (uses appsettings.production.json)
+
+3. **Deploy**
    ```bash
+   # Using Azure CLI
+   az webapp up --name your-app-name --resource-group your-resource-group
+
+   # Or publish and deploy
    dotnet publish -c Release
-   # Deploy using Azure CLI, Visual Studio, or GitHub Actions
+   # Then deploy using Azure Portal, VS Code, or GitHub Actions
    ```
+
+That's it! The app will use:
+- ✓ SQLite databases in Azure's persistent storage (`D:\home\data\`)
+- ✓ Default JWT key (with warning message)
+- ✓ Console email logging (visible in Log Stream)
+- ✓ No Application Settings required!
+
+#### Optional: Production Configuration
+
+Once deployed, you can optionally configure:
+
+**Application Settings** (Configuration → Application settings):
+```
+Jwt__Key = "your-custom-production-key-32-characters-minimum"
+Authentication__Microsoft__ClientId = "your-client-id"
+Authentication__Microsoft__ClientSecret = "your-client-secret"
+Email__Provider = "AzureCommunicationServices"
+Email__AzureCommunicationServices__ConnectionString = "your-acs-connection"
+```
+
+**Remember**: If adding OAuth, update redirect URIs in Azure AD to include:
+- `https://your-app.azurewebsites.net/signin-microsoft`
+- `https://your-app.azurewebsites.net/signin-google`
 
 ## Development Commands
 

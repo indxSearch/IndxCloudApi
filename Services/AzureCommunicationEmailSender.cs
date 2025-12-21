@@ -14,6 +14,11 @@ namespace IndxCloudApi.Services
         private readonly string _fromName;
         private readonly ILogger<AzureCommunicationEmailSender> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the AzureCommunicationEmailSender
+        /// </summary>
+        /// <param name="configuration">Application configuration containing connection string</param>
+        /// <param name="logger">Logger instance</param>
         public AzureCommunicationEmailSender(
             IConfiguration configuration,
             ILogger<AzureCommunicationEmailSender> logger)
@@ -30,6 +35,12 @@ namespace IndxCloudApi.Services
             _logger = logger;
         }
 
+        /// <summary>
+        /// Sends an email using Azure Communication Services
+        /// </summary>
+        /// <param name="email">Recipient email address</param>
+        /// <param name="subject">Email subject</param>
+        /// <param name="htmlMessage">Email body (HTML format)</param>
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
             try

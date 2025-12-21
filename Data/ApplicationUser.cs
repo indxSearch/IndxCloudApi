@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Identity;
 
 namespace IndxCloudApi.Data
 {
-    // Add profile data for application users by adding properties to the ApplicationUser class
+    /// <summary>
+    /// Application user entity extending ASP.NET Core Identity user.
+    /// Add custom profile properties here as needed.
+    /// </summary>
     public class ApplicationUser : IdentityUser
     {
     }
