@@ -272,12 +272,11 @@ public class Program
 
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
             {
-                Name = "Authorization",
-                Type = SecuritySchemeType.ApiKey,
-                Scheme = "Bearer",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "JWT Authorization header using the Bearer scheme."
+                Description = "JWT Authorization header using the Bearer scheme. Enter your token (without 'Bearer' prefix)."
             });
 
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
