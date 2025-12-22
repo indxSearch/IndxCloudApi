@@ -303,14 +303,23 @@ That's it! The app will use:
 
 Once deployed, you can optionally configure:
 
-**Application Settings** (Configuration → Application settings):
+**Application Settings** (Environment variables → App settings or Configuration → Application settings):
 ```
 Jwt__Key = "your-custom-production-key-32-characters-minimum"
 Authentication__Microsoft__ClientId = "your-client-id"
 Authentication__Microsoft__ClientSecret = "your-client-secret"
 Email__Provider = "AzureCommunicationServices"
 Email__AzureCommunicationServices__ConnectionString = "your-acs-connection"
+Registration__Mode = "EmailDomain"
+Registration__AllowedDomains__0 = "yourcompany.com"
+Registration__AllowedDomains__1 = "partner.com"
 ```
+
+**Note:** In the Azure Portal, these settings may be found under:
+- **"Environment variables"** → **"App settings"** (newer portal UI), OR
+- **"Configuration"** → **"Application settings"** (classic portal UI)
+
+Click **"+ Add"** to add each setting. Azure will automatically restart your app when you save changes.
 
 **Remember**: If adding OAuth, update redirect URIs in Azure AD to include:
 - `https://your-app.azurewebsites.net/signin-microsoft`
