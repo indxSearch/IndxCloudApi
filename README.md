@@ -198,6 +198,7 @@ dotnet ef database update
 - ✓ Uses a default JWT key (you'll see a warning on startup)
 - ✓ No secrets exposed in git
 - ✓ HTTPS enabled by default
+- ✓ Open registration (anyone can create an account)
 
 **Password Requirements:**
 - Minimum 8 characters
@@ -207,8 +208,57 @@ dotnet ef database update
 - Configurable expiration (30-365 days)
 - Default key is secure for testing, but should be customized for production
 
+### Restricting Registration
+
+By default, **anyone can register** for ease of getting started. You can easily restrict who can register by configuring the registration mode:
+
+#### Open Registration (Default)
+```json
+{
+  "Registration": {
+    "Mode": "Open"
+  }
+}
+```
+Anyone can create an account - perfect for getting started or public APIs.
+
+#### Restrict by Email Domain
+```json
+{
+  "Registration": {
+    "Mode": "EmailDomain",
+    "AllowedDomains": ["yourcompany.com", "partner.com"]
+  }
+}
+```
+Only users with email addresses from specified domains can register - great for organization-specific APIs.
+
+#### Close Registration
+```json
+{
+  "Registration": {
+    "Mode": "Closed"
+  }
+}
+```
+No one can self-register. Only admins can create accounts - ideal for private APIs with known users.
+
+#### Using Environment Variables (Production)
+```bash
+# Azure App Service Application Settings
+Registration__Mode = "EmailDomain"
+Registration__AllowedDomains__0 = "yourcompany.com"
+Registration__AllowedDomains__1 = "partner.com"
+
+# Or for closed registration
+Registration__Mode = "Closed"
+```
+
+The registration page will automatically show appropriate messages to users based on your configuration.
+
 **Production Best Practices:**
 - Change the JWT key (see Configuration section above)
+- Configure registration restrictions based on your use case
 - Never commit secrets to git
 - Use User Secrets for development
 - Use Azure Key Vault or environment variables for production

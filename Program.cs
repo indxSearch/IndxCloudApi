@@ -73,6 +73,35 @@ public class Program
         // ============================================
         // IDENTITY CONFIGURATION
         // ============================================
+
+        // ============================================
+        // REGISTRATION RESTRICTION CONFIGURATION
+        // ============================================
+        builder.Services.Configure<RegistrationOptions>(
+            builder.Configuration.GetSection("Registration"));
+        builder.Services.AddScoped<RegistrationValidator>();
+
+        var registrationMode = builder.Configuration["Registration:Mode"] ?? "Open";
+        Console.WriteLine($"ℹ Registration mode: {registrationMode}");
+
+        if (registrationMode.Equals("EmailDomain", StringComparison.OrdinalIgnoreCase))
+        {
+            var allowedDomains = builder.Configuration.GetSection("Registration:AllowedDomains").Get<List<string>>();
+            if (allowedDomains?.Any() == true)
+            {
+                Console.WriteLine($"✓ Allowed email domains: {string.Join(", ", allowedDomains)}");
+            }
+            else
+            {
+                Console.WriteLine("⚠ EmailDomain mode configured but no allowed domains specified");
+            }
+        }
+        else if (registrationMode.Equals("Closed", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("⚠ Registration is closed - only admins can create accounts");
+        }
+
+        // ============================================
         // EMAIL SERVICE CONFIGURATION (Optional - configurable)
         // ============================================
         var emailProvider = builder.Configuration["Email:Provider"]?.ToLower() ?? "console";

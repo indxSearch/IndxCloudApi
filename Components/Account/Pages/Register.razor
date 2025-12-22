@@ -7,7 +7,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using Microsoft.AspNetCore.Identity.UI.Services;
 @using IndxCloudApi.Data
-@using IndxCloudApi.Services;
+@using IndxCloudApi.Services
 @using IndxCloudApi.Components.Account.Shared
 
 
@@ -19,6 +19,7 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject RegistrationValidator RegistrationValidator
 
 
 <PageTitle>Register</PageTitle>
@@ -28,13 +29,28 @@
 <div class="row">
     <div class="col-md-8">
         <StatusMessage Message="@Message" />
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <p>This account will be used for accessing the Indx REST API on api.indx.co</p>
-            <p>After registering, your account needs to be verified.</p>
-            <ValidationSummary class="text-danger" role="alert" />
+        @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.Closed)
+        {
+            <div class="alert alert-warning" role="alert">
+                <strong>Registration Closed</strong><br />
+                @RegistrationValidator.GetRegistrationInfoMessage()
+            </div>
+        }
+        else
+        {
+            <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+                <DataAnnotationsValidator />
+                <h2>Create a new account.</h2>
+                <hr />
+                <p>This account will be used for accessing the Indx REST API on api.indx.co</p>
+                <p>After registering, your account needs to be verified.</p>
+                @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.EmailDomain)
+                {
+                    <div class="alert alert-info" role="alert">
+                        @RegistrationValidator.GetRegistrationInfoMessage()
+                    </div>
+                }
+                <ValidationSummary class="text-danger" role="alert" />
             <div style="margin-bottom: 20px;">
                 <label for="email">Email</label>
                 <InputText @bind-Value="Input.Email" type="email" autocomplete="username" placeholder="name@example.com" id="email" />
@@ -54,7 +70,8 @@
                 <ValidationMessage For="() => Input.ConfirmPassword" />
             </div>
             <button type="submit" class="w-100 btn-primary btn-large">Register</button>
-        </EditForm>
+            </EditForm>
+        }
     </div>
     @* <div class="col-md-6 col-md-offset-2">
         <section>
@@ -78,6 +95,22 @@
 
     public async Task RegisterUser(EditContext editContext)
     {
+        // Validate registration is allowed
+        var allowedResult = RegistrationValidator.ValidateRegistrationAllowed();
+        if (!allowedResult.IsValid)
+        {
+            identityErrors = new[] { new IdentityError { Description = allowedResult.ErrorMessage ?? "Registration not allowed" } };
+            return;
+        }
+
+        // Validate email domain
+        var emailResult = RegistrationValidator.ValidateEmail(Input.Email);
+        if (!emailResult.IsValid)
+        {
+            identityErrors = new[] { new IdentityError { Description = emailResult.ErrorMessage ?? "Email not allowed" } };
+            return;
+        }
+
         var user = CreateUser();
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);

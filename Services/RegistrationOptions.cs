@@ -1,0 +1,39 @@
+namespace IndxCloudApi.Services;
+
+/// <summary>
+/// Configuration options for user registration restrictions
+/// </summary>
+public class RegistrationOptions
+{
+    /// <summary>
+    /// Registration mode - controls who can register
+    /// </summary>
+    public RegistrationMode Mode { get; set; } = RegistrationMode.Open;
+
+    /// <summary>
+    /// List of allowed email domains when Mode is EmailDomain
+    /// Example: ["yourcompany.com", "partner.com"]
+    /// </summary>
+    public List<string> AllowedDomains { get; set; } = new();
+}
+
+/// <summary>
+/// Registration mode enum
+/// </summary>
+public enum RegistrationMode
+{
+    /// <summary>
+    /// Anyone can register - no restrictions (default)
+    /// </summary>
+    Open,
+
+    /// <summary>
+    /// Only email addresses from allowed domains can register
+    /// </summary>
+    EmailDomain,
+
+    /// <summary>
+    /// Registration is closed - only admins can create accounts
+    /// </summary>
+    Closed
+}
