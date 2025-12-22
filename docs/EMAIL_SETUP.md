@@ -127,17 +127,21 @@ You have two options: **Azure Managed Domain** (easiest) or **Custom Domain**
 
 ### Step 6: Configure Sender Address
 
+⚠️ **CRITICAL**: The `FromAddress` in your configuration **MUST** match a domain that is verified and connected in your Azure Communication Services resource. Azure will reject emails from unverified domains.
+
 Your sender address format depends on the domain type:
 
 **Azure Managed Domain:**
 ```
 DoNotReply@xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.azurecomm.net
 ```
+Replace `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` with your actual Azure-provisioned domain ID.
 
 **Custom Domain:**
 ```
 noreply@yourdomain.com
 ```
+Only works if you've verified and connected `yourdomain.com` in Azure (see Option B above).
 
 ---
 
