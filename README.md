@@ -174,9 +174,9 @@ export Email__Provider="AzureCommunicationServices"
 
 ## Database
 
-**SQLite (Identity only):**
-- `./IndxData/identity.db` - User accounts and authentication
-- `./IndxData/indx.db` - Application configuration (Indx Search is memory-based)
+**SQLite:**
+- `./IndxData/identity.db` - User accounts and authentication through ASP.NET Core Identity
+- `./IndxData/indx.db` - Application configuration and JSON data
 
 **Important:** Indx Search keeps all search indexes in memory for performance. The `indx.db` file is used for configuration and metadata only, not for storing search data.
 
