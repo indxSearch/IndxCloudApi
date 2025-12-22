@@ -4,13 +4,13 @@ A **ready-to-run** starter template for building a search service with **Indx Se
 
 **Works immediately without configuration!** No Azure accounts, OAuth setup, or email services required to get started.
 
-This template provides a complete Blazor Server application with REST API, user authentication, and everything you need to deploy a multi-user search service. Try it first, configure it later!
+This template provides a complete Blazor Server application with HTTP API, user authentication, and everything you need to deploy a multi-user search service. Try it first, configure it later!
 
 ## What's Included
 
 **Core Features:**
 - Blazor Server UI with interactive web interface
-- REST API with JWT authentication
+- HTTP API with JWT authentication
 - User management and authentication (local accounts + OAuth)
 - API key generation for programmatic access
 - SQLite databases (ready for production alternatives)
@@ -81,7 +81,7 @@ You can copy the reset link directly from the console and paste it into your bro
 IndxCloudApi/
 ├── Components/
 │   └── Account/          # Authentication & account management pages
-├── Controllers/          # REST API controllers (search, login)
+├── Controllers/          # HTTP API controllers (search, login)
 ├── Data/                 # Database context and models
 ├── Services/             # Email services (Console, Azure Communication)
 ├── Shared/               # Layout and shared UI components

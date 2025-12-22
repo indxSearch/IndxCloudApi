@@ -26,7 +26,7 @@ using System.Text;
 
 namespace IndxCloudApi.Controllers
 {
-    /// Rest API class for the search related functions
+    /// HTTP API class for the search related functions
     [Route("api")]
     [ApiController]
     public class SearchController : Controller

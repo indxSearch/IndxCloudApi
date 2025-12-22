@@ -38,6 +38,30 @@ namespace IndxCloudApi.Controllers
         }
 
         /// <summary>
+        /// Get JWT token for the currently authenticated user (for Swagger/API testing).
+        /// This endpoint is for users already logged in via the web UI who want to test the API.
+        /// </summary>
+        /// <returns>JWT token if user is authenticated</returns>
+        [Authorize]
+        [HttpGet("GetToken")]
+        public async Task<IActionResult> GetTokenAsync()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Unauthorized("User not found");
+
+            // Generate JWT token for the current user
+            var loginInfo = new LoginInfo
+            {
+                UserEmail = user.Email ?? "",
+                UserPassWord = "" // Not needed for token generation
+            };
+
+            var tokenstring = GenerateJasonWebToken(loginInfo, user);
+            return Ok(new { token = tokenstring });
+        }
+
+        /// <summary>
         /// After registering email and password, verification of email, and granted access by Indx,
         /// the user must start every session by this login method. Upon success it will return a JWT token.
         /// Every other endpoint of the search API will require this token passed for authentication.

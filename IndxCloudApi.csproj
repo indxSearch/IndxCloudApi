@@ -6,7 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>aspnet-IndxCloudApi-753A8260-85A1-4678-9E16-CC33E76477FD</UserSecretsId>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<DocumentationFile>bin\IndxCloudApi.xml</DocumentationFile>
+		<DocumentationFile>IndxCloudApi.xml</DocumentationFile>
 
 		<!-- Versioning (Semantic Versioning: MAJOR.MINOR.PATCH) -->
 		<Version>1.0.0</Version>

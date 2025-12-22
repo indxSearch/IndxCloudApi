@@ -259,15 +259,9 @@ public class Program
         {
             c.SwaggerDoc("v1", new OpenApiInfo
             {
-                Version = "v4.1",
+                Version = "v1.0",
                 Title = "Indx Cloud API",
-                Description = "JWT Authenticated Web API for Indx Search",
-                Contact = new OpenApiContact
-                {
-                    Name = "Indx",
-                    Email = "post@indx.co",
-                    Url = new Uri("https://indx.co")
-                }
+                Description = "JWT Authenticated HTTP API for Indx Search"
             });
 
             var filePath = Path.Combine(AppContext.BaseDirectory, "IndxCloudApi.xml");
@@ -425,8 +419,11 @@ public class Program
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Indx Cloud API v4.1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Indx Cloud API v1.0");
             c.RoutePrefix = "swagger";
+
+            // Auto-authenticate with JWT token if user is logged in
+            c.InjectJavascript("/swagger-auth.js");
         });
 
         // ============================================

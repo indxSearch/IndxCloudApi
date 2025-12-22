@@ -1,0 +1,455 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>IndxCloudApi</name>
+    </assembly>
+    <members>
+        <member name="T:IndxCloudApi.Controllers.LoginController">
+            <summary>
+            Endpoint to provide JWT bearer token based authentication
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.LoginController.#ctor(Microsoft.AspNetCore.Identity.SignInManager{IndxCloudApi.Data.ApplicationUser},Microsoft.AspNetCore.Identity.UserManager{IndxCloudApi.Data.ApplicationUser},Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Constructor used by Identity sub system
+            </summary>
+            <param name="signInManager"></param>
+            <param name="userManager"></param>
+            <param name="config"></param>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.LoginController.GetTokenAsync">
+            <summary>
+            Get JWT token for the currently authenticated user (for Swagger/API testing).
+            This endpoint is for users already logged in via the web UI who want to test the API.
+            </summary>
+            <returns>JWT token if user is authenticated</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.LoginController.PostAsync(IndxCloudApi.Models.LoginInfo)">
+            <summary>
+            After registering email and password, verification of email, and granted access by Indx,
+            the user must start every session by this login method. Upon success it will return a JWT token.
+            Every other endpoint of the search API will require this token passed for authentication.
+            </summary>
+            <param name="info">Login credentials containing UserEmail and UserPassWord</param>
+            <returns>JWT token if successful</returns>
+        </member>
+        <member name="T:IndxCloudApi.Controllers.SearchController">
+            HTTP API class for the search related functions
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.AnalyzeStreamAsync(System.String)">
+            <summary>
+            As Analyze but handles a stream as input text.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.AnalyzeString(System.String,System.String)">
+            <summary>
+            Analyze the fields of a string containing json. Since json may be invalid, which will cause
+            a 400 error, it is sent as plain text.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="jsonData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.ClearFieldSettings(System.String,System.String[])">
+            <summary>
+            ClearFields will set all properties of indexable,sortable,facetable,
+            filterable to false for the supplied list of field names. Note that this will
+            make SystemState be assigned Created.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="fields"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.CombineFilters(System.String,Indx.CloudApi.CombinedFilterProxy)">
+            <summary>
+            CreateRangeFilter will create a RangeFilter which may be passed to any search.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="combineFilters"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.CreateBoost(System.String,Indx.CloudApi.BoostProxy)">
+            <summary>
+            CreateBoost will create a Boost setu which may be passed to any search.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="boost"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.CreateOrOpen(System.String,System.Int32)">
+            <summary>
+            CreateOrOpen will create a data set where you can insert, save, index and search for DocumentJson.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="configuration"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.CreateRangeFilter(System.String,Indx.CloudApi.RangeFilterProxy)">
+            <summary>
+            CreateRangeFilter will create a RangeFilter which may be passed to any search.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="rangeFilter"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.CreateValueFilter(System.String,Indx.CloudApi.ValueFilterProxy)">
+            <summary>
+            CreateValueFilter will create a ValueFilter which may be passed to any search.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="valueFilter"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.DeleteDataSet(System.String)">
+            <summary>
+            DeleteDataSet, will delete the entire dataSet including all contained Documents.
+            It will take effect immediately and the data cannot be recovered. In case of
+            non existing dataset BadRequest will be returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetAllFields(System.String)">
+            <summary>
+            GetAllFields will return the fields found during analyze. If the client is
+            not authenticated it will return null
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetFacetableFields(System.String)">
+            <summary>
+            GetFacetableFields will return the array of these field names of. Use SetFacetableFields
+            to assign this property. If the client is not authenticated null is returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetFilterableFields(System.String)">
+            <summary>
+            GetFilterableFields will return the array of these field names of. Use SetFilterAbleFields
+            to assign this property. If the client is not autenticated null is returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetJson(System.String,System.Int64[])">
+            <summary>
+            returns the raw json records as string[] for the keys
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetNumberOfJsonRecordsInDb(System.String)">
+            <summary>
+            GetStatus will return the state\us of the dataSetName in the search engine. If the client is
+            not authenticated it will return null.If the client is asking for a non-existing dataSetName
+            a SystemState with the field invalidDataSetName= true will be returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetSearchableFields(System.String)">
+            <summary>
+            GetSearchableFields will return the array of these field names of. Use SetIndexAbleField
+            to assign this property. If the client is not authenticated null is returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetSortableFields(System.String)">
+            <summary>
+            GetSortableFields will return the array of these field names. Use SetSortableField
+            to assign this property. If the client is not authenticated null is returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetStatus(System.String)">
+            <summary>
+            GetStatus will return the state\us of the dataSetName in the search engine. If the client is
+            not authenticated it will return null.If the client is asking for a non-existing dataSetName
+            a SystemState with the field invalidDataSetName= true will be returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetUserDataSets">
+            <summary>
+            Return the datasets created by current user if any. If no datasets are
+            found an empty array will be returned.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.IndexDataSet(System.String)">
+            <summary>
+            IndexDataSet will start indexing of the Loaded documents.
+            Indexing will run asynchronously and the progress may be monitored by GetStatus.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.LoadFromDatabaseAsync(System.String)">
+            <summary>
+            Loads the jsonData into search engine from the database
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>Unauthorized (401), BadRequest(400) or Ok(200)</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.LoadStreamAsync(System.String)">
+            <summary>
+            Loads the jsonData into search engine as a stream
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>Unauthorized (401), BadRequest(400) or Ok(200)</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.LoadString(System.String,System.String)">
+            <summary>
+            Loads the jsonData into search engine as a string
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="jsonData"></param>
+            <returns>Unauthorized (401), BadRequest(400) or Ok(200)</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.Search(System.String,Indx.CloudApi.CloudQuery)">
+            <summary>
+            Search will validate the search query and return the search result. If no match is found
+            the method will return an empty document array. The method will return null if query is invalid.
+            Max length of search result is truncated to Query.MaxLengthOfSearchResult (pt = 1000).
+            If the dataSetName is non existing this will be reflected in the field InvalidDataSetName. If the state field
+            is set invalid it means that the system is still loading or indexing data. Use GetState to monitor
+            the progress of indexing. An indexing state may also result by a power cycle or restart of the server.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="query"></param>
+            <returns>SearchResult</returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.SetFacetableFields(System.String,System.String[])">
+            <summary>
+            SetIndexAbleFields will create a data set where you can insert, save, index and search for DocumentJson.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="fields"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.SetFilterableFields(System.String,System.String[])">
+            <summary>
+            SetIndexAbleFields will create a data set where you can insert, save, index and search for DocumentJson.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="fields"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.SetSearchableFields(System.String,System.ValueTuple{System.String,System.Int32}[])">
+            <summary>
+            SetIndexAbleFields will create a data set where you can insert, save, index and search for DocumentJson.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="fields"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.SetSortableFields(System.String,System.String[])">
+            <summary>
+            SetSortableFields will create a data set where you can insert, save, index and search for DocumentJson.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="fields"></param>
+            <returns></returns>
+        </member>
+        <member name="T:IndxCloudApi.Data.ApplicationUser">
+            <summary>
+            Application user entity extending ASP.NET Core Identity user.
+            Add custom profile properties here as needed.
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Models.IndxCloudInternalApi.DoIndex(System.String,System.String)">
+            <summary>
+            After Loading, insertions and deletions call this function
+            to perform the actual indexing. Use the GetState method
+            to monitor progress and readiness for Search.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="userId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Models.IndxCloudInternalApi.GetState(System.String,System.String)">
+            <summary>
+            Returns status of the system see the model
+            class for details.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="userId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Models.IndxCloudInternalApi.Search(Indx.CloudApi.CloudQuery,System.String,System.String)">
+            <summary>
+            Performs a search. See the model class for details.
+            Make sure to check for search readiness after a call
+            to DoIndexAsync.
+            </summary>
+            <param name="cloudQuery"></param>
+            <param name="dataSetName"></param>
+            <param name="userId"></param>
+            <returns></returns>
+        </member>
+        <member name="T:IndxCloudApi.Models.LoginInfo">
+            <summary>
+            Class to support JSON serialization of user credentials
+            </summary>
+        </member>
+        <member name="P:IndxCloudApi.Models.LoginInfo.UserEmail">
+            self explanatory
+        </member>
+        <member name="P:IndxCloudApi.Models.LoginInfo.UserPassWord">
+            self explanatory
+        </member>
+        <member name="T:IndxCloudApi.Program">
+            <summary>
+            Main application entry point for Indx Cloud API
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Program.Main(System.String[])">
+            <summary>
+            Application entry point - configures and starts the web host
+            </summary>
+            <param name="args">Command line arguments</param>
+        </member>
+        <member name="T:IndxCloudApi.Services.AzureCommunicationEmailSender">
+            <summary>
+            Email sender using Azure Communication Services
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Services.AzureCommunicationEmailSender.#ctor(Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Logging.ILogger{IndxCloudApi.Services.AzureCommunicationEmailSender})">
+            <summary>
+            Initializes a new instance of the AzureCommunicationEmailSender
+            </summary>
+            <param name="configuration">Application configuration containing connection string</param>
+            <param name="logger">Logger instance</param>
+        </member>
+        <member name="M:IndxCloudApi.Services.AzureCommunicationEmailSender.SendEmailAsync(System.String,System.String,System.String)">
+            <summary>
+            Sends an email using Azure Communication Services
+            </summary>
+            <param name="email">Recipient email address</param>
+            <param name="subject">Email subject</param>
+            <param name="htmlMessage">Email body (HTML format)</param>
+        </member>
+        <member name="T:IndxCloudApi.Services.ConsoleEmailSender">
+            <summary>
+            Email sender that logs to console - for development/testing
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Services.ConsoleEmailSender.#ctor(Microsoft.Extensions.Logging.ILogger{IndxCloudApi.Services.ConsoleEmailSender})">
+            <summary>
+            Initializes a new instance of the ConsoleEmailSender
+            </summary>
+            <param name="logger">Logger instance for console output</param>
+        </member>
+        <member name="M:IndxCloudApi.Services.ConsoleEmailSender.SendEmailAsync(System.String,System.String,System.String)">
+            <summary>
+            Logs email details to console instead of sending actual email (for development/testing)
+            </summary>
+            <param name="email">Recipient email address</param>
+            <param name="subject">Email subject</param>
+            <param name="htmlMessage">Email body (HTML format)</param>
+        </member>
+        <member name="T:IndxCloudApi.Services.RegistrationOptions">
+            <summary>
+            Configuration options for user registration restrictions
+            </summary>
+        </member>
+        <member name="P:IndxCloudApi.Services.RegistrationOptions.Mode">
+            <summary>
+            Registration mode - controls who can register
+            </summary>
+        </member>
+        <member name="P:IndxCloudApi.Services.RegistrationOptions.AllowedDomains">
+            <summary>
+            List of allowed email domains when Mode is EmailDomain
+            Example: ["yourcompany.com", "partner.com"]
+            </summary>
+        </member>
+        <member name="T:IndxCloudApi.Services.RegistrationMode">
+            <summary>
+            Registration mode enum
+            </summary>
+        </member>
+        <member name="F:IndxCloudApi.Services.RegistrationMode.Open">
+            <summary>
+            Anyone can register - no restrictions (default)
+            </summary>
+        </member>
+        <member name="F:IndxCloudApi.Services.RegistrationMode.EmailDomain">
+            <summary>
+            Only email addresses from allowed domains can register
+            </summary>
+        </member>
+        <member name="F:IndxCloudApi.Services.RegistrationMode.Closed">
+            <summary>
+            Registration is closed - only admins can create accounts
+            </summary>
+        </member>
+        <member name="T:IndxCloudApi.Services.RegistrationValidator">
+            <summary>
+            Service for validating user registration based on configured policies
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Services.RegistrationValidator.ValidateRegistrationAllowed">
+            <summary>
+            Validates if registration is allowed based on current mode
+            </summary>
+            <returns>ValidationResult with success status and message</returns>
+        </member>
+        <member name="M:IndxCloudApi.Services.RegistrationValidator.ValidateEmail(System.String)">
+            <summary>
+            Validates if an email address is allowed to register
+            </summary>
+            <param name="email">Email address to validate</param>
+            <returns>ValidationResult with success status and message</returns>
+        </member>
+        <member name="M:IndxCloudApi.Services.RegistrationValidator.GetCurrentMode">
+            <summary>
+            Gets the current registration mode
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Services.RegistrationValidator.GetRegistrationInfoMessage">
+            <summary>
+            Gets a user-friendly message about current registration restrictions
+            </summary>
+        </member>
+        <member name="T:IndxCloudApi.Services.RegistrationValidationResult">
+            <summary>
+            Result of registration validation
+            </summary>
+        </member>
+        <member name="T:IndxCloudApi.TextPlainInputFormatter">
+            <summary>
+            Class to ensure proper formatting for both json and plain text.
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.TextPlainInputFormatter.#ctor">
+            <summary>
+            empty ctor
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.TextPlainInputFormatter.ReadRequestBodyAsync(Microsoft.AspNetCore.Mvc.Formatters.InputFormatterContext,System.Text.Encoding)">
+            <summary>
+            Required override for abstract parent class
+            </summary>
+            <param name="context"></param>
+            <param name="encoding"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
