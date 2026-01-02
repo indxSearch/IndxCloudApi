@@ -207,7 +207,8 @@ label {
 
 /* Buttons - Global Styling */
 button,
-.btn {
+.btn,
+a.btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -222,6 +223,11 @@ button,
     gap: 10px;
     background: var(--lv7);
     color: var(--lv1);
+    text-decoration: none;
+}
+
+a.btn:hover {
+    text-decoration: none;
 }
 
 button:hover:not(:disabled),
@@ -243,11 +249,12 @@ button:focus-visible,
 
 /* Button Sizes */
 .btn-micro {
-    font: var(--text-xs);
+    font-size: 11px;
     font-weight: var(--med);
     height: 30px;
     padding: 0 10px;
     gap: 7px;
+    line-height: normal;
 }
 
 .btn-default {
@@ -297,6 +304,12 @@ button:focus-visible,
 .btn-ghost:hover:not(:disabled) {
     background: var(--lv2);
     opacity: 1;
+}
+
+/* Ghost micro buttons as links - left aligned */
+a.btn.btn-ghost.btn-micro {
+    justify-content: flex-start;
+    width: auto;
 }
 
 .btn-danger {
@@ -563,6 +576,15 @@ button:focus-visible,
 }
 
 /* Form adjustments for unauthenticated pages */
+.unauth-content a {
+    color: var(--lv5);
+    text-decoration: none;
+}
+
+.unauth-content a:hover {
+    color: var(--lv6);
+}
+
 .unauth-content h1 {
     font: var(--text-3xl);
     margin-bottom: calc(var(--spacing) * 4);
@@ -577,8 +599,8 @@ button:focus-visible,
 }
 
 .unauth-content h3 {
-    font: var(--text-xl);
-    margin-bottom: calc(var(--spacing) * 3);
+    font: var(--text-lg);
+    margin-bottom: 40px;
     color: var(--lv7);
 }
 
