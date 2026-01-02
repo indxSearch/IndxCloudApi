@@ -25,62 +25,67 @@
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+<div class="container">
+    <div class="row">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Create a new account</h3>
+                </div>
+                <div class="card-body">
+                    <StatusMessage Message="@Message" />
+                    @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.Closed)
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Registration Closed</strong><br />
+                            @RegistrationValidator.GetRegistrationInfoMessage()
+                        </div>
+                    }
+                    else
+                    {
+                        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" role="alert" />
 
-<div class="row">
-    <div class="col-md-8">
-        <StatusMessage Message="@Message" />
-        @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.Closed)
-        {
-            <div class="alert alert-warning" role="alert">
-                <strong>Registration Closed</strong><br />
-                @RegistrationValidator.GetRegistrationInfoMessage()
+                            <div style="margin-bottom: 10px;">
+                                <InputText @bind-Value="Input.Email" type="email" autocomplete="username" placeholder="Email" id="email" />
+                                <ValidationMessage For="() => Input.Email" />
+                            </div>
+
+                            <div style="margin-bottom: 10px;">
+                                <InputText type="password" @bind-Value="Input.Password" autocomplete="new-password" placeholder="Password" id="password" />
+                                <ValidationMessage For="() => Input.Password" />
+                            </div>
+
+                            <div style="margin-bottom: 10px;">
+                                <InputText type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" placeholder="Confirm Password" id="confirm-password" />
+                                <ValidationMessage For="() => Input.ConfirmPassword" />
+                            </div>
+
+                            <p style="font: var(--text-xs); color: var(--lv5); margin-bottom: 20px;">
+                                Passwords must have at least one non alphanumeric character, one digit ('0'-'9'), and one uppercase ('A'-'Z').
+                            </p>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn-secondary">Register</button>
+                            </div>
+
+                            @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.EmailDomain)
+                            {
+                                <p style="font: var(--text-base); color: var(--lv6); margin-top: 20px;">
+                                    @RegistrationValidator.GetRegistrationInfoMessage()
+                                </p>
+                            }
+
+                            <div style="margin-top: 40px; display: flex; flex-direction: column;">
+                                <a href="/Account/Login" style="font: var(--text-sm); margin-bottom: 20px;">Already have an account? Log in</a>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
             </div>
-        }
-        else
-        {
-            <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-                <DataAnnotationsValidator />
-                <h2>Create a new account.</h2>
-                <hr />
-                <p>This account will be used for accessing the Indx HTTP API</p>
-                <p>After registering, your account needs to be verified.</p>
-                @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.EmailDomain)
-                {
-                    <div class="alert alert-info" role="alert">
-                        @RegistrationValidator.GetRegistrationInfoMessage()
-                    </div>
-                }
-                <ValidationSummary class="text-danger" role="alert" />
-            <div style="margin-bottom: 20px;">
-                <label for="email">Email</label>
-                <InputText @bind-Value="Input.Email" type="email" autocomplete="username" placeholder="name@example.com" id="email" />
-                <ValidationMessage For="() => Input.Email" />
-            </div>
-            <h2>Create a password for accessing the API</h2>
-            <p style="font: var(--text-xs)">Passwords must have at least one non alphanumeric character.,
-            <br/>Passwords must have at least one digit ('0'-'9').,<br/> Passwords must have at least one uppercase ('A'-'Z').</p>
-            <div style="margin-bottom: 20px;">
-                <label for="password">Password</label>
-                <InputText type="password" @bind-Value="Input.Password" autocomplete="new-password" placeholder="password" id="password" />
-                <ValidationMessage For="() => Input.Password" />
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label for="confirm-password">Confirm Password</label>
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" placeholder="password" id="confirm-password" />
-                <ValidationMessage For="() => Input.ConfirmPassword" />
-            </div>
-            <button type="submit" class="w-100 btn-primary btn-large">Register</button>
-            </EditForm>
-        }
+        </div>
     </div>
-    @* <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div> *@
 </div>
 
 @code {

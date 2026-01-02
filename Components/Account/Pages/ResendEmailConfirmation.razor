@@ -51,10 +51,6 @@
                     }
                     else
                     {
-                        <p class="text-muted">
-                            Enter your email address and we'll send you a new confirmation link.
-                        </p>
-
                         @if (!string.IsNullOrEmpty(errorMessage))
                         {
                             <div class="alert alert-danger">
@@ -66,17 +62,16 @@
                             <DataAnnotationsValidator />
 
                             <div style="margin-bottom: 20px;">
-                                <label for="email">Email</label>
                                 <InputText @bind-Value="Input.Email"
                                            type="email"
                                            autocomplete="username"
-                                           placeholder="name@example.com"
+                                           placeholder="Email"
                                            id="email" />
                                 <ValidationMessage For="() => Input.Email" />
                             </div>
 
                             <div class="d-grid">
-                                <button type="submit" class="btn-primary btn-large" disabled="@isProcessing">
+                                <button type="submit" class="btn-secondary" disabled="@isProcessing">
                                     @if (isProcessing)
                                     {
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
@@ -88,15 +83,11 @@
                                     }
                                 </button>
                             </div>
+
+                            <div style="margin-top: 40px; display: flex; flex-direction: column;">
+                                <a href="/Account/Login" style="font: var(--text-sm);">Back to Login</a>
+                            </div>
                         </EditForm>
-
-                        <hr class="my-4" />
-
-                        <div class="text-center">
-                            <a href="/Account/Login">Back to Login</a>
-                            <span class="mx-2">|</span>
-                            <a href="/Account/Register">Register as a new user</a>
-                        </div>
                     }
                 </div>
             </div>

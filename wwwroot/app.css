@@ -532,6 +532,7 @@ a.btn.btn-ghost.btn-micro {
     width: 100%;
     height: auto;
     max-width: 175px;
+    opacity: 0.5;
 }
 
 /* Show light logo by default, hide dark */
@@ -632,7 +633,7 @@ a.btn.btn-ghost.btn-micro {
 .unauth-content .col-md-10 {
     padding: 0;
     margin: 0 auto;
-    max-width: 480px;
+    max-width: 300px;
     width: 100%;
 }
 
