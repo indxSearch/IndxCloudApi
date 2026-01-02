@@ -1,0 +1,191 @@
+@page "/Account/ResendEmailConfirmation"
+@layout UnauthenticatedLayout
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.AspNetCore.Identity.UI.Services
+@using IndxCloudApi.Data
+@inject UserManager<ApplicationUser> UserManager
+@inject IEmailSender EmailSender
+@inject NavigationManager NavigationManager
+@inject ILogger<ResendEmailConfirmation> Logger
+
+<PageTitle>Resend Email Confirmation</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Resend Email Confirmation</h3>
+                </div>
+                <div class="card-body">
+                    @if (emailSent)
+                    {
+                        <div class="alert alert-success">
+                            <h4 class="alert-heading">Email Sent!</h4>
+                            <p>
+                                We've sent a new confirmation email to <strong>@Input.Email</strong>.
+                            </p>
+                            <p>
+                                Please check your inbox and click the confirmation link.
+                            </p>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <strong>Didn't receive the email?</strong>
+                            <ul class="mb-0">
+                                <li>Check your spam/junk folder</li>
+                                <li>Make sure you entered the correct email address</li>
+                                <li>Wait a few minutes - it may take time to arrive</li>
+                            </ul>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="text-center">
+                            <a href="/Account/Login" class="btn btn-secondary">Back to Login</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">
+                            Enter your email address and we'll send you a new confirmation link.
+                        </p>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">
+                                @errorMessage
+                            </div>
+                        }
+
+                        <EditForm Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="resend-email">
+                            <DataAnnotationsValidator />
+
+                            <div style="margin-bottom: 20px;">
+                                <label for="email">Email</label>
+                                <InputText @bind-Value="Input.Email"
+                                           type="email"
+                                           autocomplete="username"
+                                           placeholder="name@example.com"
+                                           id="email" />
+                                <ValidationMessage For="() => Input.Email" />
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn-primary btn-large" disabled="@isProcessing">
+                                    @if (isProcessing)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Sending...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Resend Confirmation Email</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+
+                        <hr class="my-4" />
+
+                        <div class="text-center">
+                            <a href="/Account/Login">Back to Login</a>
+                            <span class="mx-2">|</span>
+                            <a href="/Account/Register">Register as a new user</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+    private bool isProcessing = false;
+    private bool emailSent = false;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    private async Task OnValidSubmitAsync()
+    {
+        isProcessing = true;
+        errorMessage = null;
+
+        try
+        {
+            var user = await UserManager.FindByEmailAsync(Input.Email);
+
+            // Always show success message (security best practice - prevent email enumeration)
+            if (user != null)
+            {
+                // Only send if email is not already confirmed
+                if (!await UserManager.IsEmailConfirmedAsync(user))
+                {
+                    var userId = await UserManager.GetUserIdAsync(user);
+                    var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+                    var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+                        NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+                        new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
+
+                    await EmailSender.SendEmailAsync(
+                        Input.Email,
+                        "Confirm your email",
+                        $@"
+                        <html>
+                        <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                            <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+                                <h2 style='color: #0066cc;'>Confirm Your Email</h2>
+                                <p>Please confirm your account by clicking the button below:</p>
+                                <div style='text-align: center; margin: 30px 0;'>
+                                    <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'
+                                       style='background-color: #0066cc; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; display: inline-block;'>
+                                        Confirm Email
+                                    </a>
+                                </div>
+                                <p style='color: #666; font-size: 14px;'>
+                                    Or copy and paste this link into your browser:<br/>
+                                    <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>{HtmlEncoder.Default.Encode(callbackUrl)}</a>
+                                </p>
+                            </div>
+                        </body>
+                        </html>");
+
+                    Logger.LogInformation("Resent confirmation email to {Email}", Input.Email);
+                }
+                else
+                {
+                    Logger.LogInformation("Email confirmation requested for already confirmed email: {Email}", Input.Email);
+                }
+            }
+            else
+            {
+                Logger.LogWarning("Email confirmation requested for non-existent email: {Email}", Input.Email);
+            }
+
+            // Always show success (security best practice)
+            emailSent = true;
+            isProcessing = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error resending email confirmation");
+            errorMessage = "An error occurred while sending the confirmation email. Please try again.";
+            isProcessing = false;
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+    }
+}

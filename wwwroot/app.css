@@ -508,8 +508,8 @@ button:focus-visible,
 
 .unauth-logo-container {
     position: relative;
-    width: 200px;
-    height: 60px;
+    width: 175px;
+    height: 125px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -518,7 +518,7 @@ button:focus-visible,
 .unauth-logo {
     width: 100%;
     height: auto;
-    max-width: 200px;
+    max-width: 175px;
 }
 
 /* Show light logo by default, hide dark */
