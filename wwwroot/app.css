@@ -656,10 +656,3 @@ a.btn.btn-ghost.btn-micro {
         padding: 0;
     }
 }
-
-/* Tablet adjustments */
-@media (max-width: 1024px) and (min-width: 769px) {
-    .unauth-content {
-        max-width: 400px;
-    }
-}
