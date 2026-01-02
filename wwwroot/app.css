@@ -484,3 +484,159 @@ button:focus-visible,
 .blazor-error-boundary::after {
     content: "An error has occurred."
 }
+
+/* ========================================
+   Unauthenticated Layout Styles
+   ======================================== */
+
+/* Main Layout Container */
+.unauth-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* Left Side - Logo Panel */
+.unauth-left {
+    background: var(--lv0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.unauth-logo-container {
+    position: relative;
+    width: 200px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.unauth-logo {
+    width: 100%;
+    height: auto;
+    max-width: 200px;
+}
+
+/* Show light logo by default, hide dark */
+.unauth-logo-light {
+    display: block;
+}
+
+.unauth-logo-dark {
+    display: none;
+}
+
+/* Dark mode: hide light, show dark */
+@media (prefers-color-scheme: dark) {
+    .unauth-logo-light {
+        display: none;
+    }
+
+    .unauth-logo-dark {
+        display: block;
+    }
+}
+
+/* Right Side - Content Panel */
+.unauth-right {
+    background: var(--lv0);
+    display: flex;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.unauth-content {
+    width: 100%;
+    height: 100%;
+    padding: calc(var(--spacing) * 8);
+    background: var(--lv1);
+    border-radius: calc(var(--radius) * 2);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form adjustments for unauthenticated pages */
+.unauth-content h1 {
+    font: var(--text-3xl);
+    margin-bottom: calc(var(--spacing) * 4);
+    color: var(--lv8);
+}
+
+.unauth-content h2 {
+    font: var(--text-2xl);
+    margin-top: calc(var(--spacing) * 6);
+    margin-bottom: calc(var(--spacing) * 3);
+    color: var(--lv7);
+}
+
+.unauth-content h3 {
+    font: var(--text-xl);
+    margin-bottom: calc(var(--spacing) * 3);
+    color: var(--lv7);
+}
+
+.unauth-content h4 {
+    font: var(--text-lg);
+    margin-bottom: calc(var(--spacing) * 2);
+    color: var(--lv6);
+}
+
+.unauth-content p {
+    color: var(--lv6);
+    margin-bottom: calc(var(--spacing) * 3);
+}
+
+/* Remove Bootstrap card styles on unauthenticated pages */
+.unauth-content .card,
+.unauth-content .card-header,
+.unauth-content .card-body {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.unauth-content .container,
+.unauth-content .row,
+.unauth-content .col-md-6,
+.unauth-content .col-md-8,
+.unauth-content .col-md-10 {
+    padding: 0;
+    margin: 0 auto;
+    max-width: 480px;
+    width: 100%;
+}
+
+/* Mobile Responsive - Hide left side, full content */
+@media (max-width: 768px) {
+    .unauth-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .unauth-left {
+        display: none;
+    }
+
+    .unauth-right {
+        padding: calc(var(--spacing) * 4);
+    }
+
+    .unauth-content {
+        max-width: 100%;
+        padding: 0;
+    }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .unauth-content {
+        max-width: 400px;
+    }
+}
