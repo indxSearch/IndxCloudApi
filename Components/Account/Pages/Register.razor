@@ -52,6 +52,13 @@
                                 <ValidationMessage For="() => Input.Email" />
                             </div>
 
+                            @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.EmailDomain)
+                            {
+                                <p style="font: var(--text-xs); color: var(--lv5); margin-bottom: 10px;">
+                                    @RegistrationValidator.GetRegistrationInfoMessage()
+                                </p>
+                            }
+
                             <div style="margin-bottom: 10px;">
                                 <InputText type="password" @bind-Value="Input.Password" autocomplete="new-password" placeholder="Password" id="password" />
                                 <ValidationMessage For="() => Input.Password" />
@@ -69,13 +76,6 @@
                             <div class="d-grid">
                                 <button type="submit" class="btn-secondary">Register</button>
                             </div>
-
-                            @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.EmailDomain)
-                            {
-                                <p style="font: var(--text-base); color: var(--lv6); margin-top: 20px;">
-                                    @RegistrationValidator.GetRegistrationInfoMessage()
-                                </p>
-                            }
 
                             <div style="margin-top: 40px; display: flex; flex-direction: column;">
                                 <a href="/Account/Login" style="font: var(--text-sm); margin-bottom: 20px;">Already have an account? Log in</a>
@@ -97,7 +97,22 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+    private string? Message
+    {
+        get
+        {
+            if (identityErrors is null) return null;
+
+            // Filter out DuplicateUserName errors if DuplicateEmail exists (since username = email in this app)
+            var errors = identityErrors;
+            if (errors.Any(e => e.Code == "DuplicateEmail") && errors.Any(e => e.Code == "DuplicateUserName"))
+            {
+                errors = errors.Where(e => e.Code != "DuplicateUserName");
+            }
+
+            return $"Error: {string.Join(", ", errors.Select(error => error.Description))}";
+        }
+    }
 
     public async Task RegisterUser(EditContext editContext)
     {
