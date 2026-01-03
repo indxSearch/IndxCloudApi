@@ -1,5 +1,10 @@
 ﻿@page "/"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Indx.Api
+@using Indx.Storage
+@using IndxCloudApi.Models
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -14,7 +19,90 @@
     See <a href="/swagger">Swagger</a>
 </p>
 
+<h2>Your Datasets</h2>
+
+@if (isLoading)
+{
+    <p>Loading datasets...</p>
+}
+else if (datasets == null || datasets.Length == 0)
+{
+    <p>No datasets created</p>
+}
+else
+{
+    <div>
+        @foreach (var datasetName in datasets)
+        {
+            var status = datasetStatuses.ContainsKey(datasetName) ? datasetStatuses[datasetName] : null;
+            <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc;">
+                <h3>@datasetName</h3>
+
+                @if (status != null)
+                {
+                    <div>
+                        <p><strong>System State:</strong> @status.SystemState</p>
+                        <p><strong>Document Count:</strong> @status.DocumentCount</p>
+                        <p><strong>Search Counter:</strong> @status.SearchCounter</p>
+                        <p><strong>Seconds To Index:</strong> @status.SecondsToIndex</p>
+                        <p><strong>Time Of Instance Creation:</strong> @status.TimeOfInstanceCreation</p>
+                        <p><strong>Time Of Last Index Build:</strong> @status.TimeOfLastIndexBuild</p>
+                        <p><strong>Version:</strong> @status.Version</p>
+                        @if (status.ReIndexRequired)
+                        {
+                            <p><strong>⚠️ ReIndex Required:</strong> @status.ReIndexRequired</p>
+                        }
+                        @if (status.InvalidArgument)
+                        {
+                            <p><strong>⚠️ Invalid Argument:</strong> @status.InvalidArgument</p>
+                        }
+                        @if (status.InvalidState)
+                        {
+                            <p><strong>⚠️ Invalid State:</strong> @status.InvalidState</p>
+                        }
+                        @if (status.TooLongClientText)
+                        {
+                            <p><strong>⚠️ Too Long Client Text:</strong> @status.TooLongClientText</p>
+                        }
+                        @if (status.TooLongSearchText)
+                        {
+                            <p><strong>⚠️ Too Long Search Text:</strong> @status.TooLongSearchText</p>
+                        }
+                        @if (status.UnknownConfigurationError)
+                        {
+                            <p><strong>⚠️ Unknown Configuration Error:</strong> @status.UnknownConfigurationError</p>
+                        }
+                        @if (!string.IsNullOrEmpty(status.ErrorMessage))
+                        {
+                            <p><strong>Error Message:</strong> @status.ErrorMessage</p>
+                        }
+                    </div>
+                }
+
+                @if (deleteConfirmDataset == datasetName)
+                {
+                    <div>
+                        <p>Are you sure? This cannot be undone.</p>
+                        <button @onclick="() => ConfirmDelete(datasetName)">Yes, Delete</button>
+                        <button @onclick="CancelDelete">Cancel</button>
+                    </div>
+                }
+                else
+                {
+                    <button @onclick="() => ShowDeleteConfirm(datasetName)">Delete</button>
+                }
+            </div>
+        }
+    </div>
+}
+
 @code {
+    private string[]? datasets;
+    private Dictionary<string, SystemStatus> datasetStatuses = new();
+    private bool isLoading = true;
+    private string? userId;
+    private string? deleteConfirmDataset = null;
+
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -24,6 +112,89 @@
         if (user.Identity == null || !user.Identity.IsAuthenticated)
         {
             NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+            return;
+        }
+
+        // Get userId from claims
+        userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            isLoading = false;
+            return;
+        }
+
+        // Load datasets
+        await LoadDatasets();
+    }
+
+    private async Task LoadDatasets()
+    {
+        isLoading = true;
+
+        try
+        {
+            var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, "dummy", userId);
+            datasets = persistence.GetUserDataSets(userId);
+
+            // Load status for each dataset
+            datasetStatuses.Clear();
+            if (datasets != null)
+            {
+                foreach (var datasetName in datasets)
+                {
+                    try
+                    {
+                        var status = IndxCloudInternalApi.Manager.GetState(datasetName, userId);
+                        datasetStatuses[datasetName] = status;
+                    }
+                    catch
+                    {
+                        // Skip if we can't get status for this dataset
+                    }
+                }
+            }
+        }
+        catch
+        {
+            datasets = Array.Empty<string>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowDeleteConfirm(string datasetName)
+    {
+        deleteConfirmDataset = datasetName;
+    }
+
+    private void CancelDelete()
+    {
+        deleteConfirmDataset = null;
+    }
+
+    private async Task ConfirmDelete(string datasetName)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return;
+
+        try
+        {
+            var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, datasetName, userId);
+            if (persistence.DataSetExists())
+            {
+                persistence.DeleteDataSet();
+                deleteConfirmDataset = null;
+                await LoadDatasets(); // Reload the list
+            }
+        }
+        catch (Exception ex)
+        {
+            // Show error (for now just log to console)
+            Console.WriteLine($"Error deleting dataset: {ex.Message}");
+            deleteConfirmDataset = null;
         }
     }
 }
