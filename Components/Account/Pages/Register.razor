@@ -25,68 +25,55 @@
 
 <PageTitle>Register</PageTitle>
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-10">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Create a new account</h3>
-                </div>
-                <div class="card-body">
-                    <StatusMessage Message="@Message" />
-                    @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.Closed)
-                    {
-                        <div class="alert alert-warning" role="alert">
-                            <strong>Registration Closed</strong><br />
-                            @RegistrationValidator.GetRegistrationInfoMessage()
-                        </div>
-                    }
-                    else
-                    {
-                        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary class="text-danger" role="alert" />
+<h3>Create a new account</h3>
 
-                            <div style="margin-bottom: 10px;">
-                                <InputText @bind-Value="Input.Email" type="email" autocomplete="username" placeholder="Email" id="email" />
-                                <ValidationMessage For="() => Input.Email" />
-                            </div>
-
-                            @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.EmailDomain)
-                            {
-                                <p style="font: var(--text-xs); color: var(--lv5); margin-bottom: 10px;">
-                                    @RegistrationValidator.GetRegistrationInfoMessage()
-                                </p>
-                            }
-
-                            <div style="margin-bottom: 10px;">
-                                <InputText type="password" @bind-Value="Input.Password" autocomplete="new-password" placeholder="Password" id="password" />
-                                <ValidationMessage For="() => Input.Password" />
-                            </div>
-
-                            <div style="margin-bottom: 10px;">
-                                <InputText type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" placeholder="Confirm Password" id="confirm-password" />
-                                <ValidationMessage For="() => Input.ConfirmPassword" />
-                            </div>
-
-                            <p style="font: var(--text-xs); color: var(--lv5); margin-bottom: 20px;">
-                                Passwords must have at least one non alphanumeric character, one digit ('0'-'9'), and one uppercase ('A'-'Z').
-                            </p>
-
-                            <div class="d-grid">
-                                <button type="submit" class="btn-secondary">Register</button>
-                            </div>
-
-                            <div style="margin-top: 40px; display: flex; flex-direction: column;">
-                                <a href="/Account/Login" style="font: var(--text-sm); margin-bottom: 20px;">Already have an account? Log in</a>
-                            </div>
-                        </EditForm>
-                    }
-                </div>
-            </div>
-        </div>
+<StatusMessage Message="@Message" />
+@if (RegistrationValidator.GetCurrentMode() == RegistrationMode.Closed)
+{
+    <div style="padding: 20px; border: 1px solid var(--CWarning); border-radius: var(--radius); background: rgba(255, 193, 7, 0.1); margin: 20px 0;">
+        <strong>Registration Closed</strong><br />
+        @RegistrationValidator.GetRegistrationInfoMessage()
     </div>
-</div>
+}
+else
+{
+    <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+        <DataAnnotationsValidator />
+        <ValidationSummary style="color: var(--CSignal);" role="alert" />
+
+        <div style="margin-bottom: 10px;">
+            <InputText @bind-Value="Input.Email" type="email" autocomplete="username" placeholder="Email" id="email" />
+            <ValidationMessage For="() => Input.Email" />
+        </div>
+
+        @if (RegistrationValidator.GetCurrentMode() == RegistrationMode.EmailDomain)
+        {
+            <p style="font: var(--text-xs); color: var(--lv5); margin-bottom: 10px;">
+                @RegistrationValidator.GetRegistrationInfoMessage()
+            </p>
+        }
+
+        <div style="margin-bottom: 10px;">
+            <InputText type="password" @bind-Value="Input.Password" autocomplete="new-password" placeholder="Password" id="password" />
+            <ValidationMessage For="() => Input.Password" />
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <InputText type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" placeholder="Confirm Password" id="confirm-password" />
+            <ValidationMessage For="() => Input.ConfirmPassword" />
+        </div>
+
+        <p style="font: var(--text-xs); color: var(--lv5); margin-bottom: 20px;">
+            Passwords must have at least one non alphanumeric character, one digit ('0'-'9'), and one uppercase ('A'-'Z').
+        </p>
+
+        <button type="submit" class="btn-secondary">Register</button>
+
+        <div style="margin-top: 40px; display: flex; flex-direction: column;">
+            <a href="/Account/Login" style="font: var(--text-sm); margin-bottom: 20px;">Already have an account? Log in</a>
+        </div>
+    </EditForm>
+}
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
