@@ -29,14 +29,14 @@
 }
 else if (externalLogins.Count > 0)
 {
-    <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: grid; gap: 10px;">
         @foreach (var provider in externalLogins)
         {
             <form action="Account/PerformExternalLogin" method="post">
                 <AntiforgeryToken />
                 <input type="hidden" name="provider" value="@provider.Name" />
                 <input type="hidden" name="returnUrl" value="@ReturnUrl" />
-                <button type="submit" class="btn-primary" style="width: 100%;">
+                <button type="submit" class="btn-primary">
                     @if (provider.Name == "Google")
                     {
                         <span>🔍 Sign in with Google</span>

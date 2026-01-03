@@ -397,6 +397,9 @@ a.btn-danger:hover {
 .content {
     flex: 1;
     padding: calc(var(--spacing) * 4);
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 /* Navigation */
@@ -596,6 +599,11 @@ a.btn-danger:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+.unauth-content-inner {
+    width: 100%;
+    max-width: 300px;
 }
 
 /* Form adjustments for unauthenticated pages */
