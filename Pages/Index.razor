@@ -12,14 +12,7 @@
 
 <h1>Indx Cloud API</h1>
 
-<p>This is the API endpoint of indx.co</p>
-<p>
-    Read the <a href="https://docs.indx.co">DOCS</a>
-    <br/>
-    See <a href="/swagger">Swagger</a>
-</p>
-
-<h2>Your Datasets</h2>
+<h2 style="margin-top: 40px;">Datasets</h2>
 
 @if (isLoading)
 {
@@ -89,7 +82,7 @@ else
                 }
                 else
                 {
-                    <button @onclick="() => ShowDeleteConfirm(datasetName)">Delete</button>
+                    <button class="btn-secondary btn-micro" @onclick="() => ShowDeleteConfirm(datasetName)">Delete</button>
                 }
             </div>
         }
