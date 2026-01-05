@@ -2,9 +2,7 @@
 
 A **ready-to-run** starter template for building a search service with **Indx Search**.
 
-**Works immediately without configuration!** No Azure accounts, OAuth setup, or email services required to get started.
-
-This template provides a complete Blazor Server application with HTTP API, user authentication, and everything you need to deploy a multi-user search service. Try it first, configure it later!
+This template provides a complete Blazor Server application with HTTP API, user authentication, and everything you need to deploy a multi-user search service. Try it first, configure it later.
 
 ## What's Included
 
@@ -14,7 +12,7 @@ This template provides a complete Blazor Server application with HTTP API, user 
 - User management and authentication (local accounts + OAuth)
 - API key generation for programmatic access
 - SQLite databases (ready for production alternatives)
-- Swagger/OpenAPI documentation
+- Swagger documentation
 
 **Authentication:**
 - Local accounts (username/password) - works immediately
@@ -36,12 +34,11 @@ This template provides a complete Blazor Server application with HTTP API, user 
 - A code editor (VS Code, Visual Studio, Rider)
 
 ### Get Running in 2 Steps
-
-**No configuration needed!** This template works immediately without any secrets or external services.
+ This template works immediately without any secrets or external services.
 
 1. **Clone and run**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/indxSearch/IndxCloudApi
    cd IndxCloudApi
    dotnet run
    ```
@@ -51,13 +48,11 @@ This template provides a complete Blazor Server application with HTTP API, user 
    - Register an account at `/Account/Register`
    - Start using the search API
 
-**That's it!** The template works out-of-the-box with:
+**That's it.** The template works out-of-the-box with:
 - ✓ Local user accounts (username/password)
 - ✓ SQLite databases (auto-created in `./IndxData/`)
 - ✓ Console email mode (emails logged to console, no SMTP needed)
 - ✓ Default JWT configuration (secure for testing, customize for production)
-
-**No Azure, OAuth, or email service required to get started!**
 
 ### Testing Email Features (Console Mode)
 
@@ -91,7 +86,7 @@ IndxCloudApi/
 
 ## Configuration
 
-**The template works without any configuration!** All settings below are optional and can be configured when you're ready for production or want additional features.
+**The template works without any configuration.** All settings below are optional and can be configured when you're ready for production or want additional features.
 
 ### What Works Without Configuration
 
