@@ -27,6 +27,9 @@ out/
 .idea/
 *.sln.iml
 
+# Claude Code
+.claude/
+
 # User secrets
 secrets.json
 
