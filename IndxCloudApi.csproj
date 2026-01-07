@@ -8,20 +8,29 @@
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DocumentationFile>IndxCloudApi.xml</DocumentationFile>
 
-		<!-- Versioning (Semantic Versioning: MAJOR.MINOR.PATCH) -->
-		<Version>1.0.0</Version>
+		<!-- Versioning (Semantic Versioning: MAJOR.MINOR.PATCH-PRERELEASE) -->
+		<Version>1.0.0-beta</Version>
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
 		<FileVersion>1.0.0.0</FileVersion>
+		<InformationalVersion>1.0.0-beta</InformationalVersion>
+
+		<!-- License Information -->
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<Copyright>Copyright (c) 2026 Indx (Bionic AS)</Copyright>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="LICENSE" Pack="true" PackagePath="" />
+	</ItemGroup>
 
 	<PropertyGroup Condition=" '$(RunConfiguration)' == 'IndxCloudApi' " />
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-	  <NoWarn>1701;1702;CA2254</NoWarn>
+	  <NoWarn>1701;1702;CA2254;CS1998</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-	  <NoWarn>1701;1702;CA2254</NoWarn>
+	  <NoWarn>1701;1702;CA2254;CS1998</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

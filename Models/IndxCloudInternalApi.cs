@@ -357,7 +357,7 @@ namespace IndxCloudApi.Models
                 EnableCoverage = cloudQuery.EnableCoverage,
                 EnableFacets = cloudQuery.EnableFacets,
                 SortAscending = cloudQuery.SortAscending,
-                SortBy = engine.DocumentFields.GetField(cloudQuery.SortBy),
+                SortBy = cloudQuery.SortBy != null ? engine.DocumentFields.GetField(cloudQuery.SortBy) : null,
                 TimeOutLimitMilliseconds = cloudQuery.TimeOutLimitMilliseconds
             };
             if (cloudQuery.Filter != null)

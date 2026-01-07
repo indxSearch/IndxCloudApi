@@ -11,6 +11,11 @@ namespace IndxCloudApi.Swagger
     /// </summary>
     public class ProxySchemaFilter : ISchemaFilter
     {
+        /// <summary>
+        /// Applies example values to proxy class schemas
+        /// </summary>
+        /// <param name="schema">The schema to modify</param>
+        /// <param name="context">The schema filter context containing type information</param>
         public void Apply(OpenApiSchema schema, SchemaFilterContext context)
         {
             // RangeFilterProxy examples

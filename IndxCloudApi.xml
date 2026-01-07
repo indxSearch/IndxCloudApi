@@ -463,10 +463,24 @@
             Swagger schema filter that adds example values for proxy classes
             </summary>
         </member>
+        <member name="M:IndxCloudApi.Swagger.ProxySchemaFilter.Apply(Microsoft.OpenApi.Models.OpenApiSchema,Swashbuckle.AspNetCore.SwaggerGen.SchemaFilterContext)">
+            <summary>
+            Applies example values to proxy class schemas
+            </summary>
+            <param name="schema">The schema to modify</param>
+            <param name="context">The schema filter context containing type information</param>
+        </member>
         <member name="T:IndxCloudApi.Swagger.SearchExamplesOperationFilter">
             <summary>
             Adds multiple named examples for the Search endpoint
             </summary>
+        </member>
+        <member name="M:IndxCloudApi.Swagger.SearchExamplesOperationFilter.Apply(Microsoft.OpenApi.Models.OpenApiOperation,Swashbuckle.AspNetCore.SwaggerGen.OperationFilterContext)">
+            <summary>
+            Applies multiple named examples to the Search endpoint operation
+            </summary>
+            <param name="operation">The OpenAPI operation to modify</param>
+            <param name="context">The operation filter context</param>
         </member>
         <member name="T:IndxCloudApi.TextPlainInputFormatter">
             <summary>

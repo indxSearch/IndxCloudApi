@@ -10,6 +10,11 @@ namespace IndxCloudApi.Swagger
     /// </summary>
     public class SearchExamplesOperationFilter : IOperationFilter
     {
+        /// <summary>
+        /// Applies multiple named examples to the Search endpoint operation
+        /// </summary>
+        /// <param name="operation">The OpenAPI operation to modify</param>
+        /// <param name="context">The operation filter context</param>
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
             // Only apply to the Search endpoint
