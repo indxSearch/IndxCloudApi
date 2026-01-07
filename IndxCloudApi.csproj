@@ -23,6 +23,10 @@
 		<None Include="LICENSE" Pack="true" PackagePath="" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Content Include="IndxData\*.license" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
+
 	<PropertyGroup Condition=" '$(RunConfiguration)' == 'IndxCloudApi' " />
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
