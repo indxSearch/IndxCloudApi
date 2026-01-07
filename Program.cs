@@ -509,6 +509,13 @@ public class Program
                         datasetCount += dataSets.Count;
                     }
                 }
+                else
+                {
+                    sqLiteManager.CreateDatabase();
+                    userCount = 0;
+                    datasetCount = 0;
+                }
+
             }
             catch { /* Ignore errors counting datasets */ }
         }
