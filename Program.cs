@@ -270,6 +270,12 @@ public class Program
                 c.IncludeXmlComments(filePath);
             }
 
+            // Add schema filter for proxy class examples
+            c.SchemaFilter<IndxCloudApi.Swagger.ProxySchemaFilter>();
+
+            // Add operation filter for Search endpoint examples
+            c.OperationFilter<IndxCloudApi.Swagger.SearchExamplesOperationFilter>();
+
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
             {
                 Type = SecuritySchemeType.Http,
@@ -450,16 +456,88 @@ public class Program
             Console.WriteLine($"⚠ Warning: Could not ensure search database directory exists: {ex.Message}");
         }
 
+        string? detectedLicenseFile = null;
+        int datasetCount = 0;
+        int userCount = 0;
+
         try
         {
-            IndxCloudInternalApi.StartUpSystem(searchConnectionString);
+            var licensePath = builder.Configuration["Indx:LicenseFile"] ?? "";
+            IndxCloudInternalApi.StartUpSystem(searchConnectionString, licensePath);
             Console.WriteLine($"✓ Search system initialized at: {searchDbPath}");
+
+            // Detect license file for summary
+            if (!string.IsNullOrWhiteSpace(licensePath) && File.Exists(licensePath))
+            {
+                detectedLicenseFile = Path.GetFileName(licensePath);
+                Console.WriteLine($"✓ Using license file: {licensePath}");
+            }
+            else if (Directory.Exists("./IndxData"))
+            {
+                var licenses = Directory.GetFiles("./IndxData", "*.license");
+                if (licenses.Length > 0)
+                {
+                    // Prefer company licenses over developer licenses (same logic as GetLicensePath)
+                    var companyLicense = licenses.FirstOrDefault(l =>
+                        !Path.GetFileName(l).Equals("indx-developer.license", StringComparison.OrdinalIgnoreCase));
+                    var selectedLicense = companyLicense ?? licenses[0];
+                    detectedLicenseFile = Path.GetFileName(selectedLicense);
+                    Console.WriteLine($"✓ Using license file: {selectedLicense}");
+                }
+                else
+                {
+                    Console.WriteLine("ℹ No license file found - running with 100,000 document limit");
+                    Console.WriteLine("  Place your license file (.license) in ./IndxData/ to remove the limit");
+                }
+            }
+            else
+            {
+                Console.WriteLine("ℹ No license file found - running with 100,000 document limit");
+            }
+
+            // Count users and datasets for summary
+            try
+            {
+                var sqLiteManager = new Indx.Storage.SqLiteManager(searchConnectionString);
+                if (sqLiteManager.DatabaseExists())
+                {
+                    var users = sqLiteManager.GetUsers();
+                    userCount = users.Count;
+                    foreach (var user in users)
+                    {
+                        var dataSets = sqLiteManager.GetUserDataSets(user);
+                        datasetCount += dataSets.Count;
+                    }
+                }
+            }
+            catch { /* Ignore errors counting datasets */ }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"⚠ Warning: Search system initialization failed: {ex.Message}");
             Console.WriteLine("The application will start but search functionality may be limited");
         }
+
+        // Display startup summary
+        Console.WriteLine();
+        Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");
+        Console.WriteLine("║                  Indx Cloud API Ready                     ║");
+        Console.WriteLine("╠═══════════════════════════════════════════════════════════╣");
+
+        var applicationUrl = builder.Configuration["ASPNETCORE_URLS"] ?? "https://localhost:5001";
+        var baseUrl = applicationUrl.Split(';')[0]; // Take first URL if multiple
+        Console.WriteLine($"║ API:      {baseUrl,-48}║");
+        Console.WriteLine($"║ Swagger:  {baseUrl + "/swagger",-48}║");
+
+        var licenseDisplay = detectedLicenseFile ?? "None (100k limit)";
+        Console.WriteLine($"║ License:  {licenseDisplay,-48}║");
+
+        var userDisplay = userCount == 1 ? "1 user" : $"{userCount} users";
+        var datasetDisplay = datasetCount == 1 ? "1 dataset" : $"{datasetCount} datasets";
+        Console.WriteLine($"║ Users:    {userDisplay,-48}║");
+        Console.WriteLine($"║ Datasets: {datasetDisplay,-48}║");
+        Console.WriteLine("╚═══════════════════════════════════════════════════════════╝");
+        Console.WriteLine();
 
         app.Run();
     }

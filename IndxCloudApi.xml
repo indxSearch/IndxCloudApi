@@ -34,7 +34,18 @@
             <returns>JWT token if successful</returns>
         </member>
         <member name="T:IndxCloudApi.Controllers.SearchController">
-            HTTP API class for the search related functions
+            <summary>
+            Provides API endpoints for managing, analyzing, indexing, and searching JSON-based datasets. Supports operations
+            such as dataset creation, deletion, field configuration, data loading, and executing search queries. All
+            endpoints require authentication and operate on datasets associated with the authenticated user.
+            </summary>
+            <remarks>This controller exposes a comprehensive set of endpoints for working with document-oriented
+            datasets in a search engine context. Operations include analyzing JSON data, configuring
+            searchable/filterable/sortable fields, creating and combining filters, loading data from various sources, and
+            performing search queries. Most endpoints require a valid dataset name and user authentication via JWT bearer
+            tokens. Responses typically indicate success or provide detailed error information for invalid requests, such as
+            unauthorized access or invalid dataset names. The controller is intended for use in scenarios where users need
+            to manage and query large collections of JSON documents with flexible field and filter configurations.</remarks>
         </member>
         <member name="M:IndxCloudApi.Controllers.SearchController.AnalyzeStreamAsync(System.String)">
             <summary>
@@ -49,16 +60,6 @@
             </summary>
             <param name="dataSetName"></param>
             <param name="jsonData"></param>
-            <returns></returns>
-        </member>
-        <member name="M:IndxCloudApi.Controllers.SearchController.ClearFieldSettings(System.String,System.String[])">
-            <summary>
-            ClearFields will set all properties of indexable,sortable,facetable,
-            filterable to false for the supplied list of field names. Note that this will
-            make SystemState be assigned Created.
-            </summary>
-            <param name="dataSetName"></param>
-            <param name="fields"></param>
             <returns></returns>
         </member>
         <member name="M:IndxCloudApi.Controllers.SearchController.CombineFilters(System.String,Indx.CloudApi.CombinedFilterProxy)">
@@ -149,7 +150,7 @@
         </member>
         <member name="M:IndxCloudApi.Controllers.SearchController.GetNumberOfJsonRecordsInDb(System.String)">
             <summary>
-            GetStatus will return the state\us of the dataSetName in the search engine. If the client is
+            GetStatus will return the status\us of the dataSetName in the search engine. If the client is
             not authenticated it will return null.If the client is asking for a non-existing dataSetName
             a SystemState with the field invalidDataSetName= true will be returned.
             </summary>
@@ -174,7 +175,7 @@
         </member>
         <member name="M:IndxCloudApi.Controllers.SearchController.GetStatus(System.String)">
             <summary>
-            GetStatus will return the state\us of the dataSetName in the search engine. If the client is
+            GetStatus will return the status\us of the dataSetName in the search engine. If the client is
             not authenticated it will return null.If the client is asking for a non-existing dataSetName
             a SystemState with the field invalidDataSetName= true will be returned.
             </summary>
@@ -223,9 +224,9 @@
             Search will validate the search query and return the search result. If no match is found
             the method will return an empty document array. The method will return null if query is invalid.
             Max length of search result is truncated to Query.MaxLengthOfSearchResult (pt = 1000).
-            If the dataSetName is non existing this will be reflected in the field InvalidDataSetName. If the state field
+            If the dataSetName is non existing this will be reflected in the field InvalidDataSetName. If the status field
             is set invalid it means that the system is still loading or indexing data. Use GetState to monitor
-            the progress of indexing. An indexing state may also result by a power cycle or restart of the server.
+            the progress of indexing. An indexing status may also result by a power cycle or restart of the server.
             </summary>
             <param name="dataSetName"></param>
             <param name="query"></param>
@@ -307,12 +308,6 @@
             <summary>
             Class to support JSON serialization of user credentials
             </summary>
-        </member>
-        <member name="P:IndxCloudApi.Models.LoginInfo.UserEmail">
-            self explanatory
-        </member>
-        <member name="P:IndxCloudApi.Models.LoginInfo.UserPassWord">
-            self explanatory
         </member>
         <member name="T:IndxCloudApi.Program">
             <summary>
@@ -405,6 +400,13 @@
             Service for validating user registration based on configured policies
             </summary>
         </member>
+        <member name="M:IndxCloudApi.Services.RegistrationValidator.#ctor(Microsoft.Extensions.Options.IOptions{IndxCloudApi.Services.RegistrationOptions},Microsoft.Extensions.Logging.ILogger{IndxCloudApi.Services.RegistrationValidator})">
+            <summary>
+            Initializes a new instance of the RegistrationValidator class
+            </summary>
+            <param name="options">Registration configuration options</param>
+            <param name="logger">Logger instance</param>
+        </member>
         <member name="M:IndxCloudApi.Services.RegistrationValidator.ValidateRegistrationAllowed">
             <summary>
             Validates if registration is allowed based on current mode
@@ -431,6 +433,39 @@
         <member name="T:IndxCloudApi.Services.RegistrationValidationResult">
             <summary>
             Result of registration validation
+            </summary>
+        </member>
+        <member name="P:IndxCloudApi.Services.RegistrationValidationResult.IsValid">
+            <summary>
+            Gets whether the validation passed
+            </summary>
+        </member>
+        <member name="P:IndxCloudApi.Services.RegistrationValidationResult.ErrorMessage">
+            <summary>
+            Gets the error message if validation failed, or null if successful
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Services.RegistrationValidationResult.Success">
+            <summary>
+            Creates a successful validation result
+            </summary>
+            <returns>A successful validation result</returns>
+        </member>
+        <member name="M:IndxCloudApi.Services.RegistrationValidationResult.Failure(System.String)">
+            <summary>
+            Creates a failed validation result with an error message
+            </summary>
+            <param name="errorMessage">The error message describing why validation failed</param>
+            <returns>A failed validation result</returns>
+        </member>
+        <member name="T:IndxCloudApi.Swagger.ProxySchemaFilter">
+            <summary>
+            Swagger schema filter that adds example values for proxy classes
+            </summary>
+        </member>
+        <member name="T:IndxCloudApi.Swagger.SearchExamplesOperationFilter">
+            <summary>
+            Adds multiple named examples for the Search endpoint
             </summary>
         </member>
         <member name="T:IndxCloudApi.TextPlainInputFormatter">

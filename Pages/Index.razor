@@ -41,6 +41,11 @@ else
                         <p><strong>Time Of Instance Creation:</strong> @status.TimeOfInstanceCreation</p>
                         <p><strong>Time Of Last Index Build:</strong> @status.TimeOfLastIndexBuild</p>
                         <p><strong>Version:</strong> @status.Version</p>
+
+                        @if (status.LicenseInfo?.DocumentLimitExceeded == true)
+                        {
+                            <p style="color: var(--CSignal); font-weight: bold;">⚠️ License Document Limit Exceeded: @status.DocumentCount.ToString("N0") / @status.LicenseInfo.DocumentLimit.ToString("N0")</p>
+                        }
                         @if (status.ReIndexRequired)
                         {
                             <p><strong>⚠️ ReIndex Required:</strong> @status.ReIndexRequired</p>
@@ -127,6 +132,11 @@ else
 
         try
         {
+            if(string.IsNullOrEmpty(userId))
+            {
+                datasets = Array.Empty<string>();
+                return;
+            }   
             var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, "dummy", userId);
             datasets = persistence.GetUserDataSets(userId);
 
@@ -139,7 +149,8 @@ else
                     try
                     {
                         var status = IndxCloudInternalApi.Manager.GetState(datasetName, userId);
-                        datasetStatuses[datasetName] = status;
+                        if(status!= null)
+                            datasetStatuses[datasetName] = status;
                     }
                     catch
                     {

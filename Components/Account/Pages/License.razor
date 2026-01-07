@@ -1,0 +1,194 @@
+@page "/Account/License"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Authorization
+@using Indx.Api
+@using IndxCloudApi.Models
+@attribute [Authorize]
+@inject ILogger<License> Logger
+
+<PageTitle>License Information</PageTitle>
+
+<h2>Indx License Information</h2>
+
+@if (isLoading)
+{
+    <p>Loading license information...</p>
+}
+else if (licenseInfo != null)
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div style="padding: 20px; border: 1px solid var(--CSignal); border-radius: var(--radius); background: rgba(255, 66, 56, 0.1); margin: 20px 0;">
+            <strong>Error:</strong> @errorMessage
+        </div>
+    }
+
+    <div style="margin: 40px 0;">
+        @if (licenseInfo.Licensed && licenseInfo.ValidLicense)
+        {
+            <div style="padding: 20px; border: 1px solid var(--CTeal); border-radius: var(--radius); background: rgba(114, 245, 198, 0.1); margin: 20px 0;">
+                <h3>✓ Licensed</h3>
+                <p>Your Indx installation is properly licensed.</p>
+            </div>
+        }
+        else if (licenseInfo.Licensed && !licenseInfo.ValidLicense)
+        {
+            <div style="padding: 20px; border: 1px solid var(--CSignal); border-radius: var(--radius); background: rgba(255, 66, 56, 0.1); margin: 20px 0;">
+                <h3>⚠ License Expired</h3>
+                <p>Your license has expired. Please contact <a href="https://indx.co" target="_blank">indx.co</a> to renew.</p>
+            </div>
+        }
+        else
+        {
+            <div style="padding: 20px; border: 1px solid var(--CLightBlue); border-radius: var(--radius); background: rgba(107, 158, 255, 0.1); margin: 20px 0;">
+                <h3>ℹ Running Without License</h3>
+                <p>You are running with the default 100,000 document limit.</p>
+                <p style="margin-top: 10px;">
+                    <strong>To remove this limit:</strong><br />
+                    1. Register at <a href="https://indx.co" target="_blank" style="color: var(--CLightBlue);">indx.co</a><br />
+                    2. Request your free extended license<br />
+                    3. Place the license file in <code style="background: var(--lv1); padding: 2px 6px; border-radius: 3px;">./IndxData/</code> directory
+                </p>
+            </div>
+        }
+
+        <div style="margin-top: 30px;">
+            <h3>License Details</h3>
+            <div style="padding: 20px; border: 1px solid var(--lv3); border-radius: var(--radius); background: var(--lv0); margin: 20px 0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--lv2);">
+                            <td style="padding: 12px 0; font-weight: bold; width: 200px;">Licensed To:</td>
+                            <td style="padding: 12px 0;">@licenseInfo.LicensedTo</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--lv2);">
+                            <td style="padding: 12px 0; font-weight: bold;">Type:</td>
+                            <td style="padding: 12px 0;">@licenseInfo.Type</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--lv2);">
+                            <td style="padding: 12px 0; font-weight: bold;">Description:</td>
+                            <td style="padding: 12px 0;">@licenseInfo.Description</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--lv2);">
+                            <td style="padding: 12px 0; font-weight: bold;">Document Limit:</td>
+                            <td style="padding: 12px 0;">
+                                @if (licenseInfo.DocumentLimit == int.MaxValue)
+                                {
+                                    <span>Unlimited</span>
+                                }
+                                else
+                                {
+                                    <span>@licenseInfo.DocumentLimit.ToString("N0")</span>
+                                }
+                                @if (licenseInfo.DocumentLimitExceeded)
+                                {
+                                    <span style="color: var(--CSignal); margin-left: 10px;">⚠ Limit Exceeded</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--lv2);">
+                            <td style="padding: 12px 0; font-weight: bold;">Expiration Date:</td>
+                            <td style="padding: 12px 0;">
+                                @if (licenseInfo.ExpirationDate.Year >= 3000)
+                                {
+                                    <span>Never</span>
+                                }
+                                else
+                                {
+                                    <span>@licenseInfo.ExpirationDate.ToString("yyyy-MM-dd")</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--lv2);">
+                            <td style="padding: 12px 0; font-weight: bold;">License File:</td>
+                            <td style="padding: 12px 0; font-family: monospace; font-size: 12px;">@licenseInfo.LicenseFileName</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 0; font-weight: bold;">Valid:</td>
+                            <td style="padding: 12px 0;">
+                                @if (licenseInfo.ValidLicense)
+                                {
+                                    <span style="color: var(--CTeal);">✓ Yes</span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--CSignal);">✗ No</span>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (!licenseInfo.Licensed || !licenseInfo.ValidLicense)
+        {
+            <div style="margin-top: 30px; padding: 20px; border: 1px solid var(--lv3); border-radius: var(--radius); background: var(--lv0);">
+                <h3>Getting a License</h3>
+                <div style="margin-top: 15px;">
+                    <h4>Option 1: Free Extended License (Recommended)</h4>
+                    <ul style="line-height: 1.8;">
+                        <li>Register an account at <a href="https://indx.co" target="_blank" style="color: var(--CLightBlue);">https://indx.co</a></li>
+                        <li>Request your free extended license</li>
+                        <li>No restrictions - use for any purpose including production</li>
+                        <li>Place file in <code style="background: var(--lv1); padding: 2px 6px; border-radius: 3px;">./IndxData/indx-developer.license</code></li>
+                    </ul>
+
+                    <h4 style="margin-top: 20px;">Option 2: Paid Company License</h4>
+                    <ul style="line-height: 1.8;">
+                        <li>For organizations requiring SLA and technical support</li>
+                        <li>Includes service level guarantees and priority support</li>
+                        <li>Same document capacity as extended license</li>
+                        <li>Contact <a href="https://indx.co" target="_blank" style="color: var(--CLightBlue);">indx.co</a> for pricing</li>
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div style="padding: 20px; border: 1px solid var(--CSignal); border-radius: var(--radius); background: rgba(255, 66, 56, 0.1); margin: 20px 0;">
+        <strong>Error:</strong> Unable to load license information.
+    </div>
+}
+
+@code {
+    private LicenseInfo? licenseInfo;
+    private string? errorMessage;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLicenseInfo();
+    }
+
+    private async Task LoadLicenseInfo()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                licenseInfo = IndxCloudInternalApi.Manager.GetLicenseInfo();
+            });
+
+            if (licenseInfo == null)
+            {
+                errorMessage = "GetLicenseInfo returned null - this should not happen";
+                Logger.LogWarning("GetLicenseInfo returned null");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception: {ex.Message}";
+            Logger.LogError(ex, "Error loading license information");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -13,7 +13,18 @@ using System.Text;
 
 namespace IndxCloudApi.Controllers
 {
-    /// HTTP API class for the search related functions
+    /// <summary>
+    /// Provides API endpoints for managing, analyzing, indexing, and searching JSON-based datasets. Supports operations
+    /// such as dataset creation, deletion, field configuration, data loading, and executing search queries. All
+    /// endpoints require authentication and operate on datasets associated with the authenticated user.
+    /// </summary>
+    /// <remarks>This controller exposes a comprehensive set of endpoints for working with document-oriented
+    /// datasets in a search engine context. Operations include analyzing JSON data, configuring
+    /// searchable/filterable/sortable fields, creating and combining filters, loading data from various sources, and
+    /// performing search queries. Most endpoints require a valid dataset name and user authentication via JWT bearer
+    /// tokens. Responses typically indicate success or provide detailed error information for invalid requests, such as
+    /// unauthorized access or invalid dataset names. The controller is intended for use in scenarios where users need
+    /// to manage and query large collections of JSON documents with flexible field and filter configurations.</remarks>
     [Route("api")]
     [ApiController]
     public class SearchController : Controller
@@ -33,6 +44,8 @@ namespace IndxCloudApi.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
             var matcher = IndxCloudInternalApi.Manager.FindSearchEngineForInit(dataSetName, userId);
+            if (matcher == null)
+                return BadRequest("AnalyzeStreamAsync non existing dataset name or configuration");
             var state = matcher.Status;
             if (state.InvalidDataSetName)
                 return BadRequest("invalid dataSetName");
@@ -43,8 +56,9 @@ namespace IndxCloudApi.Controllers
                 return BadRequest("Analyze failed, likely invalid json data");
             if (matcher.DocumentFields == null)
                 return BadRequest("Analyze failed, DocumentFields==null");
+            if (matcher.Persistence == null)
+                return BadRequest("Analyze failed, Persistence==null");
             matcher.Persistence.SaveDocumentFields(matcher.DocumentFields.GetSerialized());
-            matcher.Status.SystemState = SystemState.Created;
             return Ok(state);
         }
 
@@ -67,54 +81,19 @@ namespace IndxCloudApi.Controllers
             if (string.IsNullOrEmpty(jsonData))
                 return BadRequest("null or empty jsonData argument");
             var state = IndxCloudInternalApi.Manager.GetState(dataSetName, userId);
-            if (state.InvalidDataSetName)
+            if (state == null || state.InvalidDataSetName)
                 return BadRequest("invalid dataSetName");
             var matcher = IndxCloudInternalApi.Manager.FindSearchEngineForInit(dataSetName, userId);
-            var df = DocumentFields.Analyze(jsonData, out string error);
-            if (!string.IsNullOrEmpty(error))
-                return BadRequest(BadRequest(error));
-            matcher.SetDocumentFieldsInternal(df);
-            matcher.Persistence.SaveDocumentFields(df.GetSerialized());
-            matcher.Status.SystemState = SystemState.Created;
-            return state;
-        }
-
-        /// <summary>
-        /// ClearFields will set all properties of indexable,sortable,facetable,
-        /// filterable to false for the supplied list of field names. Note that this will
-        /// make SystemState be assigned Created.
-        /// </summary>
-        /// <param name="dataSetName"></param>
-        /// <param name="fields"></param>
-        /// <returns></returns>
-        [HttpPut("ClearFieldSettings/{dataSetName}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [EnableCors("AllowAllHeaders")]
-        public IActionResult ClearFieldSettings(string dataSetName, [FromBody] string[] fields)
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-            if (!FileNameValidity.IsValid(dataSetName))
-                return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
             if (matcher == null)
-                return BadRequest("non existing dataSetName");
-            var df = matcher.DocumentFields;
-            if (df == null)
-                return BadRequest("SearchController.ClearFieldSettings invalid state");
-            foreach (var item in fields)
-            {
-                var f = df.GetField(item);
-                if (f == null)
-                    return BadRequest("SearchController.SetFacetableFields non existing fieldname");
-                f.Searchable = false;
-                f.Facetable = false;
-                f.Filterable = false;
-                f.Sortable = false;
-            }
-            matcher.Status.SystemState = SystemState.Created;
-            return Ok();
+                return BadRequest("AnalyzeString non existing dataset name or configuration");
+            var df = DocumentFields.Analyze(jsonData, out string error);
+            if (!string.IsNullOrEmpty(error) || df == null)
+                return BadRequest(error);
+            matcher.SetDocumentFieldsInternal(df);
+            if (matcher.Persistence == null)
+                return BadRequest("Analyze failed, Persistence==null");
+            matcher.Persistence.SaveDocumentFields(df.GetSerialized());
+            return state;
         }
 
         /// <summary>
@@ -134,7 +113,7 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             if (matcher == null)
                 return BadRequest("CombineFilters, non existing dataset name");
             var fa = matcher.GetFilterFromKey(combineFilters.A.HashString);
@@ -166,7 +145,7 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             if ((matcher == null))
                 return BadRequest("CreateBoost non existing dataset name");
             var filter = matcher.GetFilterFromKey(boost.FilterProxy.HashString);
@@ -220,9 +199,8 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             if (matcher == null)
-                //if (!IndxCloudInternalApi.Manager.ReloadAndIndex(dataSetName, userId, false, out SearchEngine matcher))
                 return BadRequest("CreateRangeFilter non existing dataset name");
             var filter = matcher.CreateRangeFilter(rangeFilter.FieldName, rangeFilter.LowerLimit, rangeFilter.UpperLimit);
             if (filter == null)
@@ -249,7 +227,7 @@ namespace IndxCloudApi.Controllers
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
             //if (!IndxCloudInternalApi.Manager.ReloadAndIndex(dataSetName, userId, false, out SearchEngine matcher))
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             if (matcher == null)
                 return BadRequest("CreateRangeFilter non existing dataset name");
             var filter = matcher.CreateValueFilter(valueFilter.FieldName, valueFilter.Value);
@@ -274,8 +252,6 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            if (IndxCloudInternalApi.Manager == null)
-                return BadRequest("Manager==null");
             var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, dataSetName, userId);
             if (!persistence.DataSetExists())
                 return BadRequest("Attempt to delete non exixting dataset");
@@ -348,16 +324,18 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            var engine = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var engine = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
+            if (engine == null)
+                return BadRequest("GetJson non existing dataset name");
             if (engine.Status.SystemState == SystemState.Created || engine.Status.SystemState == SystemState.Loading)
-                return BadRequest("GetJson invalid state, no data loaded or loading in progress");
+                return BadRequest("GetJson invalid status, no data loaded or loading in progress");
             var jsonStrings = new string[keys.Length];
             for (int i = 0; i < jsonStrings.Length; i++)
                 jsonStrings[i] = engine.GetJsonDataOfKey(keys[i]);
             return jsonStrings;
         }
         /// <summary>
-        /// GetStatus will return the state\us of the dataSetName in the search engine. If the client is
+        /// GetStatus will return the status\us of the dataSetName in the search engine. If the client is
         /// not authenticated it will return null.If the client is asking for a non-existing dataSetName
         /// a SystemState with the field invalidDataSetName= true will be returned.
         /// </summary>
@@ -373,7 +351,7 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, dataSetName, userId);
             if (!persistence.DataSetExists())
-                return null;
+                return BadRequest("invalid dataSetName");
             return persistence.NumberOfJsonRecords();
         }
         /// <summary>
@@ -409,7 +387,7 @@ namespace IndxCloudApi.Controllers
             return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, true, false, false);
         }
         /// <summary>
-        /// GetStatus will return the state\us of the dataSetName in the search engine. If the client is
+        /// GetStatus will return the status\us of the dataSetName in the search engine. If the client is
         /// not authenticated it will return null.If the client is asking for a non-existing dataSetName
         /// a SystemState with the field invalidDataSetName= true will be returned.
         /// </summary>
@@ -423,8 +401,10 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            var state = IndxCloudInternalApi.Manager.GetState(dataSetName, userId);
-            return state;
+            var status = IndxCloudInternalApi.Manager.GetState(dataSetName, userId);
+            if (status == null)
+                return BadRequest("GetStatus failed, status==null");
+            return status;
         }
 
         /// <summary>
@@ -458,9 +438,12 @@ namespace IndxCloudApi.Controllers
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return null;
+                return BadRequest("unauthorized");
             IndxCloudInternalApi.Manager.DoIndex(dataSetName, userId);
-            return IndxCloudInternalApi.Manager.GetState(dataSetName, userId);
+            var status = IndxCloudInternalApi.Manager.GetState(dataSetName, userId);
+            if (status == null)
+                return BadRequest("IndexDataSet failed, status==null");
+            return status;
         }
 
         /// <summary>
@@ -479,11 +462,11 @@ namespace IndxCloudApi.Controllers
 
             var pm = new ProcessMonitor();
             var success = IndxCloudInternalApi.Manager.LoadFromDatabase(dataSetName, userId, pm);
-            await pm.WaitForCompletionAsync();
-
             if (!success)
+                return BadRequest("LoadFromDatabaseAsync failed, success==null");
+            await pm.WaitForCompletionAsync();
+            if (!pm.Succeeded)
                 return BadRequest(pm.ErrorMessage);
-
             return Ok();
         }
 
@@ -506,8 +489,10 @@ namespace IndxCloudApi.Controllers
             var bodyStream = HttpContext.Request.Body;
             bodyStream.Position = 0; // Ensure it's at the beginning
             var pm = new ProcessMonitor();
-            IndxCloudInternalApi.Manager.Load(dataSetName, userId, bodyStream, pm);
-            pm.WaitForCompletion();
+            if (IndxCloudInternalApi.Manager.Load(dataSetName, userId, bodyStream, pm))
+                pm.WaitForCompletion();
+            else
+                return BadRequest("LoadStreamAsync failed, Load returned false");
             if (!pm.Succeeded)
                 return BadRequest(pm.ErrorMessage);
             return Ok();
@@ -536,8 +521,10 @@ namespace IndxCloudApi.Controllers
             }
             memoryStream.Position = 0;
             var pm = new ProcessMonitor();
-            IndxCloudInternalApi.Manager.Load(dataSetName, userId, memoryStream, pm);
-            pm.WaitForCompletion();
+            if (IndxCloudInternalApi.Manager.Load(dataSetName, userId, memoryStream, pm))
+                pm.WaitForCompletion();
+            else
+                return BadRequest("LoadString failed, Load returned false");
             if (!pm.Succeeded)
                 return BadRequest(pm.ErrorMessage);
             return Ok();
@@ -547,9 +534,9 @@ namespace IndxCloudApi.Controllers
         /// Search will validate the search query and return the search result. If no match is found
         /// the method will return an empty document array. The method will return null if query is invalid.
         /// Max length of search result is truncated to Query.MaxLengthOfSearchResult (pt = 1000).
-        /// If the dataSetName is non existing this will be reflected in the field InvalidDataSetName. If the state field
+        /// If the dataSetName is non existing this will be reflected in the field InvalidDataSetName. If the status field
         /// is set invalid it means that the system is still loading or indexing data. Use GetState to monitor
-        /// the progress of indexing. An indexing state may also result by a power cycle or restart of the server.
+        /// the progress of indexing. An indexing status may also result by a power cycle or restart of the server.
         /// </summary>
         /// <param name="dataSetName"></param>
         /// <param name="query"></param>
@@ -583,12 +570,12 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             if (matcher == null)
                 return BadRequest("non existing dataSetName");
             var df = matcher.DocumentFields;
             if (df == null)
-                return BadRequest("SearchController.SetFacetableFields invalid state");
+                return BadRequest("SearchController.SetFacetableFields invalid status");
             foreach (var item in fields)
             {
                 var f = df.GetField(item);
@@ -616,12 +603,12 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             if (matcher == null)
                 return BadRequest("non existing dataSetName");
             var df = matcher.DocumentFields;
             if (df == null)
-                return BadRequest("SearchController.SetFilterableFields invalid state");
+                return BadRequest("SearchController.SetFilterableFields invalid status");
             foreach (var item in fields)
             {
                 var f = df.GetField(item);
@@ -649,13 +636,13 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             //IndxCloudInternalApi.Manager.ReloadAndIndex(dataSetName, userId, false, out SearchEngine matcher);
             if (matcher == null)
                 return BadRequest("non existing dataSetName");
             var df = matcher.DocumentFields;
             if (df == null)
-                return BadRequest("SearchController.SetSearchableFields invalid state");
+                return BadRequest("SearchController.SetSearchableFields invalid status");
             foreach (var item in fields)
             {
                 var f = df.GetField(item.Name);
@@ -684,12 +671,12 @@ namespace IndxCloudApi.Controllers
                 return Unauthorized();
             if (!FileNameValidity.IsValid(dataSetName))
                 return BadRequest("invalid dataSetName");
-            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId, true);
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
             if (matcher == null)
                 return BadRequest("non existing dataSetName");
             var df = matcher.DocumentFields;
             if (df == null)
-                return BadRequest("SearchController.SetSortableFields invalid state");
+                return BadRequest("SearchController.SetSortableFields invalid status");
             foreach (var item in fields)
             {
                 var f = df.GetField(item);

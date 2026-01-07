@@ -10,6 +10,11 @@ public class RegistrationValidator
     private readonly RegistrationOptions _options;
     private readonly ILogger<RegistrationValidator> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the RegistrationValidator class
+    /// </summary>
+    /// <param name="options">Registration configuration options</param>
+    /// <param name="logger">Logger instance</param>
     public RegistrationValidator(
         IOptions<RegistrationOptions> options,
         ILogger<RegistrationValidator> logger)
@@ -126,12 +131,27 @@ public class RegistrationValidator
 /// </summary>
 public class RegistrationValidationResult
 {
+    /// <summary>
+    /// Gets whether the validation passed
+    /// </summary>
     public bool IsValid { get; init; }
+    /// <summary>
+    /// Gets the error message if validation failed, or null if successful
+    /// </summary>
     public string? ErrorMessage { get; init; }
 
+    /// <summary>
+    /// Creates a successful validation result
+    /// </summary>
+    /// <returns>A successful validation result</returns>
     public static RegistrationValidationResult Success() =>
         new() { IsValid = true };
 
+    /// <summary>
+    /// Creates a failed validation result with an error message
+    /// </summary>
+    /// <param name="errorMessage">The error message describing why validation failed</param>
+    /// <returns>A failed validation result</returns>
     public static RegistrationValidationResult Failure(string errorMessage) =>
         new() { IsValid = false, ErrorMessage = errorMessage };
 }

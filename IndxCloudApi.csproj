@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
-		<Nullable>annotations</Nullable>
+		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>aspnet-IndxCloudApi-753A8260-85A1-4678-9E16-CC33E76477FD</UserSecretsId>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
@@ -51,7 +51,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="IndxSearchLib" Version="4.1.0-rc1" />
+	  <PackageReference Include="IndxSearchLib" Version="4.1.1" />
 	</ItemGroup>
 
 </Project>

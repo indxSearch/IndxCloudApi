@@ -137,3 +137,6 @@ wwwroot/lib/
 
 # Blazor specific
 **/*.blazor.server.log
+
+# Indx speficig
+*.license

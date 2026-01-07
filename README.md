@@ -54,6 +54,27 @@ This template provides a complete Blazor Server application with HTTP API, user 
 - ✓ Console email mode (emails logged to console, no SMTP needed)
 - ✓ Default JWT configuration (secure for testing, customize for production)
 
+## Related Projects
+
+**IndxCloudApi** is part of the Indx Search ecosystem. These companion tools make it even easier to work with:
+
+### **IndxCloudLoader** (C#)
+A command-line tool for loading data into your IndxCloudApi instance. Perfect for batch importing documents, testing with sample data, or automating dataset creation.
+
+- **Repository:** [IndxCloudLoader](https://github.com/indxSearch/IndxCloudLoader)
+- **Use cases:**
+  - Bulk load JSON documents
+  - Automated dataset setup for testing
+
+### **indx-intrface** (React)
+Ready-to-use React UI components and a complete demo application for building search interfaces that connect to IndxCloudApi.
+
+- **Repository:** [indx-intrface](https://github.com/indxSearch/indx-intrface)
+- **Features:**
+  - Pre-built search components
+  - Working demo application
+  - Easy integration with your React projects
+
 ### Testing Email Features (Console Mode)
 
 When testing password reset or other email features, check your console output. All emails are logged there:
@@ -142,6 +163,107 @@ export Authentication__Microsoft__ClientId="your-client-id"
 export Authentication__Microsoft__ClientSecret="your-client-secret"
 export Email__Provider="AzureCommunicationServices"
 ```
+
+## License Configuration
+
+**Indx Search** is completely free but includes a **100,000 document limit** by default. To remove this limit, you need to register as a developer.
+
+### Document Limits
+
+- **No License**: 100,000 documents maximum
+- **Extended License (Free)**: Removes limitation - requires registered account at indx.co
+- **Company License (Paid)**: Same capacity as extended license, but includes SLA and support
+
+### Getting a License
+
+**Option 1: Free Extended License (Recommended)**
+- Register an account at [https://indx.co](https://indx.co)
+- Request your free extended license - no restrictions
+- Use for any purpose: development, testing, or production
+- Filename: `indx-developer.license`
+
+**Option 2: Paid Company License**
+- For organizations requiring SLA and technical support
+- Includes service level guarantees and priority support
+- Same document capacity as extended license
+- Contact [https://indx.co](https://indx.co) for pricing
+- Filename: `indx-yourcompany.license` (e.g., `indx-google.license`, `indx-apple.license`)
+
+### License File Placement
+
+The system automatically detects license files in the `./IndxData/` directory:
+
+```bash
+IndxCloudApi/
+└── IndxData/
+    ├── identity.db
+    ├── indx.db
+    └── indx-developer.license    # Place your license file here
+```
+
+**Steps:**
+1. Receive your license file (`.license` extension)
+2. Place it in `./IndxData/` directory
+3. Restart the application
+
+The system will automatically detect and use any `.license` file in this directory. If multiple license files exist, it prioritizes `indx-company.license` over `indx-developer.license`.
+
+### Custom License Path (Optional)
+
+If you need to store your license file elsewhere, configure the path in `appsettings.json`:
+
+```json
+{
+  "Indx": {
+    "LicenseFile": "/path/to/your/license.file"
+  }
+}
+```
+
+Or use environment variables for production:
+
+```bash
+# Local development (User Secrets)
+dotnet user-secrets set "Indx:LicenseFile" "/path/to/license.file"
+
+# Production (Environment Variable)
+export Indx__LicenseFile="/path/to/license.file"
+
+# Azure App Service (Application Settings)
+Indx__LicenseFile = "/path/to/license.file"
+```
+
+### Verifying Your License
+
+When the application starts, it logs the license status:
+
+```
+✓ Search system initialized at: ./IndxData/indx.db
+✓ Using license file: ./IndxData/indx-developer.license
+```
+
+Or if no license is found:
+
+```
+ℹ No license file found - running with 100,000 document limit
+  Place your license file (.license) in ./IndxData/ to remove the limit
+```
+
+### Azure Deployment
+
+**For Azure App Service**, license files work the same way:
+
+1. **Option A: Include in deployment (Recommended)**
+   - Place license file in `./IndxData/` before publishing
+   - Deploy normally - the file will be included
+   - License file deploys with your application
+
+2. **Option B: Upload after deployment**
+   - Use FTP or Azure Portal App Service Editor (Kudu)
+   - Upload to `D:\home\site\wwwroot\IndxData\`
+   - Useful if you need to update the license without redeploying
+
+**Important**: The `./IndxData/` directory persists across restarts on Azure App Service. License files placed there remain available even after redeployment.
 
 ## Using the API
 

@@ -7,9 +7,11 @@ namespace IndxCloudApi.Models
     internal sealed class IndxCloudInternalApi
     {
         #region Public Methods
-        public SearchEngine FindSearchEngineForInit(string dataSetName, string userId)
+        public SearchEngine? FindSearchEngineForInit(string dataSetName, string userId)
         {
-            var matcher = FindInstance(dataSetName, userId, true);
+            var matcher = FindInstance(dataSetName, userId);
+            if (matcher == null)
+                return null;
             if (matcher.Status.SystemState == SystemState.Created)
                 return matcher;
             matcher.Dispose();
@@ -17,18 +19,22 @@ namespace IndxCloudApi.Models
             var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, dataSetName, userId);
             // invariant; DataSetExists() == true   
             int? configuration = persistence.ReadDataSetConfiguration();
+            if (configuration == null)
+                return null;
             persistence.CreateOrOpenDataSet((int)configuration);
+
+            var licensePath = GetLicensePath();
             matcher = new SearchEngine(MakeLogPrefix(userId, dataSetName), Indx.Utilities.ILoggerFactory.GetFactory(logFileName),
-               (int)configuration, "")
+               (int)configuration, licensePath)
             {
                 Persistence = persistence
             };
             _instances.Add(MakeKey(dataSetName, userId), new SearchEngineInstance() { theInstance = matcher });
             return matcher;
         }
-        public SearchEngine FindSearchEngine(string dataSetName, string userId, bool forceCreate = false)
+        public SearchEngine? FindSearchEngine(string dataSetName, string userId)
         {
-            return FindInstance(dataSetName, userId, forceCreate);
+            return FindInstance(dataSetName, userId);
         }
         #endregion Public Methods
 
@@ -39,21 +45,59 @@ namespace IndxCloudApi.Models
         #region Internal Properties
         // API will not get used before after program.cs has executed App.Run. It will however, call
         // IndxCloudInternalAPI.StartUpSystem first, ensuring Manager cannot be null.
-        internal static IndxCloudInternalApi Manager { private set; get; }
+
+        internal static IndxCloudInternalApi Manager
+        {
+            get => _manager ?? throw new InvalidOperationException(
+                "Manager not initialized. Call StartUpSystem during startup.");
+            private set => _manager = value;
+        }
 
         #endregion Internal Properties
 
         #region Internal Methods
-        internal static void StartUpSystem(string dbConnectionString)
+        internal static void StartUpSystem(string dbConnectionString, string licensePath = "")
         {
-            if (Manager != null)
+            if (_manager != null)  // Check the backing field directly
             {
-                throw new System.InvalidOperationException("IndxCloudInternalAPI.Startupsystem shall only be called once");
+                throw new InvalidOperationException("IndxCloudInternalApi.StartUpSystem shall only be called once");
             }
+            LicensePath = licensePath;
             Manager = new IndxCloudInternalApi(dbConnectionString);
             Manager.InitializeSystem();
         }
-        internal static string SearchDbConnectionString { get; private set; }
+        internal static string SearchDbConnectionString { get; private set; } = "";
+        internal static string LicensePath { get; private set; } = "";
+
+        private static string GetLicensePath()
+        {
+            // If explicitly configured, use that
+            if (!string.IsNullOrWhiteSpace(LicensePath) && File.Exists(LicensePath))
+                return Path.GetFullPath(LicensePath);
+
+            // Auto-detect in ./IndxData directory
+            var dataDir = "./IndxData";
+            if (Directory.Exists(dataDir))
+            {
+                var licenses = Directory.GetFiles(dataDir, "*.license");
+                if (licenses.Length > 0)
+                {
+                    // Prefer company licenses over developer licenses
+                    // (company licenses typically have company names, not "developer")
+                    var companyLicense = licenses.FirstOrDefault(l =>
+                        !Path.GetFileName(l).Equals("indx-developer.license", StringComparison.OrdinalIgnoreCase));
+
+                    if (companyLicense != null)
+                        return Path.GetFullPath(companyLicense);
+
+                    // Fall back to first license found
+                    return Path.GetFullPath(licenses[0]);
+                }
+            }
+
+            // No license found - return empty string (100k document limit)
+            return string.Empty;
+        }
         /// <summary>
         /// After Loading, insertions and deletions call this function
         /// to perform the actual indexing. Use the GetState method
@@ -67,7 +111,7 @@ namespace IndxCloudApi.Models
             try
             {
                 var pm = new ProcessMonitor();
-                var engine = FindInstance(dataSetName, userId, true);
+                var engine = FindInstance(dataSetName, userId);
                 if (engine != null && (engine.Status.SystemState == SystemState.Loaded
                     || engine.Status.SystemState == SystemState.Ready))
                 {
@@ -89,27 +133,25 @@ namespace IndxCloudApi.Models
         {
             try
             {
-                var engine = FindInstance(dataSetName, userId, true);
+                var engine = FindInstance(dataSetName, userId);
                 if (engine == null)
-                    return new string[0];
-                {
-                    var fields = engine.GetFieldList();
-                    var returnList = new List<string>(fields.Count);
-                    for (int i = 0; i < fields.Count; i++)
-                        if (all)
-                            returnList.Add(fields[i].Name);
-                        else if (fields[i].Searchable && indexable)
-                            returnList.Add(fields[i].Name);
-                        else if (fields[i].Sortable && sortable)
-                            returnList.Add(fields[i].Name);
-                        else if (fields[i].Filterable && filterable)
-                            returnList.Add(fields[i].Name);
-                        else if (fields[i].Facetable && facetable)
-                            returnList.Add(fields[i].Name);
-                    return returnList.ToArray();
-                }
+                    return Array.Empty<string>();
+                var fields = engine.GetFieldList();
+                var returnList = new List<string>(fields.Count);
+                for (int i = 0; i < fields.Count; i++)
+                    if (all)
+                        returnList.Add(fields[i].Name);
+                    else if (fields[i].Searchable && indexable)
+                        returnList.Add(fields[i].Name);
+                    else if (fields[i].Sortable && sortable)
+                        returnList.Add(fields[i].Name);
+                    else if (fields[i].Filterable && filterable)
+                        returnList.Add(fields[i].Name);
+                    else if (fields[i].Facetable && facetable)
+                        returnList.Add(fields[i].Name);
+                return returnList.ToArray();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(MakeLogPrefix(userId, dataSetName) + "IndxCloudInternalAPI.GetFields exception" + ex.ToString());
                 throw;
@@ -123,11 +165,11 @@ namespace IndxCloudApi.Models
         /// <param name="dataSetName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        internal SystemStatus GetState(string dataSetName, string userId)
+        internal SystemStatus? GetState(string dataSetName, string userId)
         {
             try
             {
-                var engine = FindInstance(dataSetName, userId, true);
+                var engine = FindInstance(dataSetName, userId);
                 if (engine == null)
                     return null;
                 return engine.Status;
@@ -139,17 +181,19 @@ namespace IndxCloudApi.Models
             }
         }
 
-        internal void Load(string dataSetName, string userId, Stream jsonData, ProcessMonitor pm)
+        internal bool Load(string dataSetName, string userId, Stream jsonData, ProcessMonitor pm)
         {
-            var instance = FindInstance(dataSetName, userId, true);
+            var instance = FindInstance(dataSetName, userId);
+            if (instance == null)
+                return false;
             instance.Load(jsonData, pm);
+            return true;
         }
         internal bool LoadFromDatabase(string dataSetName, string userId, ProcessMonitor monitor)
         {
-            var instance = FindInstance(dataSetName, userId, true);
+            var instance = FindInstance(dataSetName, userId);
             if (instance == null)
             {
-                monitor.Succeeded = false;
                 monitor.MarkFinished();
                 return false;
             }
@@ -167,7 +211,7 @@ namespace IndxCloudApi.Models
         }
         internal async Task<(bool success, string errorMessage)> LoadJsonStreamAsync(string dataSetName, string userId, Stream jsonData)
         {
-            var instance = FindInstance(dataSetName, userId, true);
+            var instance = FindInstance(dataSetName, userId);
             if (instance == null)
                 return (false, $"{nameof(LoadJsonStreamAsync)} SearchEngine not found");
             var pm = new ProcessMonitor();
@@ -187,7 +231,7 @@ namespace IndxCloudApi.Models
         {
             try
             {
-                var engine = FindInstance(dataSetName, userId, true);
+                var engine = FindInstance(dataSetName, userId);
                 if (engine == null)
                     return Result.MakeEmptyResult();
                 Query query = FromCloudQuery2Query(cloudQuery, engine);
@@ -199,12 +243,44 @@ namespace IndxCloudApi.Models
                 throw;
             }
         }
+
+        internal LicenseInfo? GetLicenseInfo()
+        {
+            try
+            {
+                var licensePath = GetLicensePath();
+
+                // Create a temporary SearchEngine instance and initialize it to load license
+                using var tempEngine = new SearchEngine(licensePath);
+
+                // Minimal workflow to trigger license loading: Init, configure field, Load, Index
+                var minimalJson = "[{\"field\":\"value\"}]";
+                using var jsonStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(minimalJson));
+
+                tempEngine.Init(jsonStream);
+                tempEngine.GetField("field")!.Searchable = true;
+                jsonStream.Position = 0;
+                tempEngine.Load(jsonStream);
+                tempEngine.Index();
+
+                if (tempEngine?.Status?.LicenseInfo == null)
+                    return null;
+
+                return tempEngine.Status.LicenseInfo;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "IndxCloudInternalAPI.GetLicenseInfo exception");
+                throw;
+            }
+        }
         #endregion Internal Methods
 
         #region Private Fields
         private readonly object _dictionaryLock = new();
         private readonly Dictionary<string, SearchEngineInstance> _instances = [];
         private readonly ILogger<IndxCloudInternalApi> _logger;
+        private static IndxCloudInternalApi? _manager;
         #endregion Private Fields
 
         #region Private Constructors
@@ -241,7 +317,7 @@ namespace IndxCloudApi.Models
                     var dataSets = sqLiteManager.GetUserDataSets(user);
                     foreach (var dataSet in dataSets)
                     {
-                        var instance = FindInstance(dataSet, user, true);
+                        var instance = FindInstance(dataSet, user);
                         if (instance == null)  // fields in dataset not configured properly
                             continue;
                         var monitor = new ProcessMonitor();
@@ -309,38 +385,35 @@ namespace IndxCloudApi.Models
             return "User:" + userId + " dataSet:" + dataSetName + " ";
         }
 
-        private SearchEngine FindInstance(string dataSetName, string userId, bool forceCreate)
+        private SearchEngine? FindInstance(string dataSetName, string userId)
         {
-            SearchEngine? matcher = null;
-            bool found = false;
-            SearchEngineInstance? instance;
             string key = MakeKey(dataSetName, userId);
+
             lock (_dictionaryLock)
             {
-                found = _instances.TryGetValue(key, out instance);
-                if (!found && forceCreate)
+                // Try to get existing instance
+                if (_instances.TryGetValue(key, out var instance))
+                    return instance?.theInstance;
+
+                // Create new instance if not found
+                var persistence = new Persistence(SearchDbConnectionString, dataSetName, userId);
+                var configuration = persistence.ReadDataSetConfiguration();
+                if (configuration == null)
+                    return null;
+
+                var licensePath = GetLicensePath();
+                var matcher = new SearchEngine(
+                    MakeLogPrefix(userId, dataSetName),
+                    Indx.Utilities.ILoggerFactory.GetFactory(logFileName),
+                    (int)configuration,
+                    licensePath)
                 {
-                    var persistence = new Persistence(SearchDbConnectionString, dataSetName, userId);
-                    var configuration = persistence.ReadDataSetConfiguration();
-                    if (configuration == null)
-                        return null;
-                    matcher = new SearchEngine(MakeLogPrefix(userId, dataSetName), Indx.Utilities.ILoggerFactory.GetFactory(logFileName),
-                       (int)configuration, "")
-                    {
-                        Persistence = persistence
-                    };
-                    SearchEngineInstance instances = new() { theInstance = matcher };
-                    _instances.Add(key, instances);
-                    return matcher;
-                }
-            }
-            if (found && instance != null && instance.theInstance != null)
-            {
-                matcher = instance.theInstance;
-                SearchEngineInstance instances = new() { theInstance = matcher };
+                    Persistence = persistence
+                };
+
+                _instances.Add(key, new SearchEngineInstance { theInstance = matcher });
                 return matcher;
             }
-            return matcher;
         }
         #endregion Private Methods
 
