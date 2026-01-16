@@ -65,7 +65,6 @@
 
 	<ItemGroup>
 	  <PackageReference Include="IndxSearchLib" Version="4.1.2" />
-	  <!-- <ProjectReference Include="..\Indx\Indx.csproj" /> -->
 	</ItemGroup>
 
 </Project>
