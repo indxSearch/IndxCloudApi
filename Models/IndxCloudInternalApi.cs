@@ -129,7 +129,7 @@ namespace IndxCloudApi.Models
             }
         }
 
-        internal string[] GetFields(string dataSetName, string userId, bool all, bool indexable, bool sortable, bool filterable, bool facetable)
+        internal string[] GetFields(string dataSetName, string userId, bool all, bool indexable, bool sortable, bool filterable, bool facetable, bool wordIndexing)
         {
             try
             {
@@ -139,6 +139,7 @@ namespace IndxCloudApi.Models
                 var fields = engine.GetFieldList();
                 var returnList = new List<string>(fields.Count);
                 for (int i = 0; i < fields.Count; i++)
+                {
                     if (all)
                         returnList.Add(fields[i].Name);
                     else if (fields[i].Searchable && indexable)
@@ -149,6 +150,9 @@ namespace IndxCloudApi.Models
                         returnList.Add(fields[i].Name);
                     else if (fields[i].Facetable && facetable)
                         returnList.Add(fields[i].Name);
+                    else if (fields[i].WordIndexing && wordIndexing)
+                        returnList.Add(fields[i].Name);
+                }
                 return returnList.ToArray();
             }
             catch (Exception ex)
@@ -343,7 +347,6 @@ namespace IndxCloudApi.Models
                 _logger.LogError($"{nameof(IndxCloudInternalApi)}.{nameof(InitializeSystem)} {ex.ToString()}");
                 throw;
             }
-
         }
         private static Query FromCloudQuery2Query(CloudQuery cloudQuery, SearchEngine engine)
         {

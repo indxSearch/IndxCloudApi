@@ -62,6 +62,7 @@ namespace IndxCloudApi.Swagger
                                 ["coverJoinedWords"] = new OpenApiBoolean(true),
                                 ["coverPrefixSuffix"] = new OpenApiBoolean(true),
                                 ["truncate"] = new OpenApiBoolean(true),
+                                ["includePatternMatches"] = new OpenApiBoolean(true),
                                 ["truncationScore"] = new OpenApiInteger(255)
                             },
                             ["enableFacets"] = new OpenApiBoolean(false),

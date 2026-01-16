@@ -182,6 +182,14 @@
             <param name="dataSetName"></param>
             <returns>SearchState</returns>
         </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetWordIndexingFields(System.String)">
+            <summary>
+            GetWordIndexingFields will return the array of these field names. Use SetWordIndexingFields
+            to assign this property. If the client is not authenticated null is returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
         <member name="M:IndxCloudApi.Controllers.SearchController.GetUserDataSets">
             <summary>
             Return the datasets created by current user if any. If no datasets are
@@ -262,6 +270,15 @@
         <member name="M:IndxCloudApi.Controllers.SearchController.SetSortableFields(System.String,System.String[])">
             <summary>
             SetSortableFields will create a data set where you can insert, save, index and search for DocumentJson.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="fields"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.SetWordIndexingFields(System.String,System.String[])">
+            <summary>
+            SetWordIndexingFields will set the WordIndexing properties of the fields to true.
             Every endpoint of this API will refer to one or more datasets.
             </summary>
             <param name="dataSetName"></param>
