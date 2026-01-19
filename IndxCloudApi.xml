@@ -182,6 +182,14 @@
             <param name="dataSetName"></param>
             <returns>SearchState</returns>
         </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.GetWordIndexingFields(System.String)">
+            <summary>
+            GetWordIndexingFields will return the array of these field names. Use SetWordIndexingFields
+            to assign this property. If the client is not authenticated null is returned.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns>SearchState</returns>
+        </member>
         <member name="M:IndxCloudApi.Controllers.SearchController.GetUserDataSets">
             <summary>
             Return the datasets created by current user if any. If no datasets are
@@ -268,6 +276,15 @@
             <param name="fields"></param>
             <returns></returns>
         </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.SetWordIndexingFields(System.String,System.String[])">
+            <summary>
+            SetWordIndexingFields will set the WordIndexing properties of the fields to true.
+            Every endpoint of this API will refer to one or more datasets.
+            </summary>
+            <param name="dataSetName"></param>
+            <param name="fields"></param>
+            <returns></returns>
+        </member>
         <member name="T:IndxCloudApi.Data.ApplicationUser">
             <summary>
             Application user entity extending ASP.NET Core Identity user.
@@ -303,6 +320,21 @@
             <param name="dataSetName"></param>
             <param name="userId"></param>
             <returns></returns>
+        </member>
+        <member name="M:IndxCloudApi.Models.IndxCloudInternalApi.DisposeUserInstances(System.String)">
+            <summary>
+            Removes and disposes all SearchEngine instances for a specific user.
+            This should be called before deleting a user from the database.
+            </summary>
+            <param name="userId">The user ID to clean up</param>
+        </member>
+        <member name="M:IndxCloudApi.Models.IndxCloudInternalApi.DisposeDataSetInstance(System.String,System.String)">
+            <summary>
+            Removes and disposes a specific SearchEngine instance for a dataset.
+            This should be called before deleting a dataset from the database.
+            </summary>
+            <param name="dataSetName">The dataset name to clean up</param>
+            <param name="userId">The user ID that owns the dataset</param>
         </member>
         <member name="T:IndxCloudApi.Models.LoginInfo">
             <summary>

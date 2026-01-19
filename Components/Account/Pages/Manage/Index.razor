@@ -102,7 +102,16 @@
         {
             <div style="margin-top: 20px; padding: 20px; border: 1px solid var(--CSignal); border-radius: var(--radius); background: rgba(255, 66, 56, 0.1);">
                 <p><strong>Are you absolutely sure?</strong></p>
-                <p>This action cannot be undone. Type your email address to confirm:</p>
+                <p>This action cannot be undone and will permanently delete:</p>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li>Your account and login credentials</li>
+                    <li>All datasets, documents, and search indexes</li>
+                </ul>
+                <p style="color: var(--CWarning); margin: 15px 0;">
+                    <strong>⚠ Security Note:</strong> Any active JWT bearer tokens will remain cryptographically
+                    valid until they expire. Stop using tokens before deletion to prevent orphaned data.
+                </p>
+                <p>Type your email address to confirm:</p>
                 <input type="text" style="margin: 10px 0; width: 100%;" @bind="confirmEmail" @bind:event="oninput" placeholder="Enter your email" />
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     @if (CanDeleteAccount)

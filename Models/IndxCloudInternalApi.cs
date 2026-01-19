@@ -129,7 +129,7 @@ namespace IndxCloudApi.Models
             }
         }
 
-        internal string[] GetFields(string dataSetName, string userId, bool all, bool indexable, bool sortable, bool filterable, bool facetable)
+        internal string[] GetFields(string dataSetName, string userId, bool all, bool indexable, bool sortable, bool filterable, bool facetable, bool wordIndexing)
         {
             try
             {
@@ -139,6 +139,7 @@ namespace IndxCloudApi.Models
                 var fields = engine.GetFieldList();
                 var returnList = new List<string>(fields.Count);
                 for (int i = 0; i < fields.Count; i++)
+                {
                     if (all)
                         returnList.Add(fields[i].Name);
                     else if (fields[i].Searchable && indexable)
@@ -149,6 +150,9 @@ namespace IndxCloudApi.Models
                         returnList.Add(fields[i].Name);
                     else if (fields[i].Facetable && facetable)
                         returnList.Add(fields[i].Name);
+                    else if (fields[i].WordIndexing && wordIndexing)
+                        returnList.Add(fields[i].Name);
+                }
                 return returnList.ToArray();
             }
             catch (Exception ex)
@@ -241,6 +245,70 @@ namespace IndxCloudApi.Models
             {
                 _logger.LogError(MakeLogPrefix(userId, dataSetName) + "IndxCloudInternalAPI.Search exception" + ex.ToString());
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Removes and disposes all SearchEngine instances for a specific user.
+        /// This should be called before deleting a user from the database.
+        /// </summary>
+        /// <param name="userId">The user ID to clean up</param>
+        internal void DisposeUserInstances(string userId)
+        {
+            lock (_dictionaryLock)
+            {
+                // Find all keys that start with the userId
+                var keysToRemove = _instances.Keys
+                    .Where(k => k.StartsWith(userId))
+                    .ToList();
+
+                _logger.LogInformation($"Disposing {keysToRemove.Count} SearchEngine instances for user {userId}");
+
+                foreach (var key in keysToRemove)
+                {
+                    if (_instances.TryGetValue(key, out var instance))
+                    {
+                        try
+                        {
+                            instance?.theInstance?.Dispose();
+                            _instances.Remove(key);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"Error disposing SearchEngine instance {key}: {ex.Message}");
+                            // Continue with other instances even if one fails
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes and disposes a specific SearchEngine instance for a dataset.
+        /// This should be called before deleting a dataset from the database.
+        /// </summary>
+        /// <param name="dataSetName">The dataset name to clean up</param>
+        /// <param name="userId">The user ID that owns the dataset</param>
+        internal void DisposeDataSetInstance(string dataSetName, string userId)
+        {
+            lock (_dictionaryLock)
+            {
+                var key = MakeKey(dataSetName, userId);
+
+                if (_instances.TryGetValue(key, out var instance))
+                {
+                    try
+                    {
+                        instance?.theInstance?.Dispose();
+                        _instances.Remove(key);
+                        _logger.LogInformation($"Disposed SearchEngine instance for user {userId}, dataset {dataSetName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Error disposing SearchEngine instance {key}: {ex.Message}");
+                        // Continue even if disposal fails
+                    }
+                }
             }
         }
 
@@ -343,7 +411,6 @@ namespace IndxCloudApi.Models
                 _logger.LogError($"{nameof(IndxCloudInternalApi)}.{nameof(InitializeSystem)} {ex.ToString()}");
                 throw;
             }
-
         }
         private static Query FromCloudQuery2Query(CloudQuery cloudQuery, SearchEngine engine)
         {

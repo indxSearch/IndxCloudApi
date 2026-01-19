@@ -255,6 +255,10 @@ namespace IndxCloudApi.Controllers
             var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, dataSetName, userId);
             if (!persistence.DataSetExists())
                 return BadRequest("Attempt to delete non exixting dataset");
+
+            // Clean up in-memory SearchEngine instance before deleting from DB
+            IndxCloudInternalApi.Manager.DisposeDataSetInstance(dataSetName, userId);
+
             persistence.DeleteDataSet();
             return Ok();
         }
@@ -273,7 +277,7 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, true, false, false, false, false);
+            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, true, false, false, false, false, false);
         }
 
         /// <summary>
@@ -290,7 +294,7 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, false, false, true);
+            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, false, false, true, false);
         }
 
         /// <summary>
@@ -307,7 +311,7 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, false, true, false);
+            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, false, true, false, false);
         }
 
         /// <summary>
@@ -368,7 +372,7 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, true, false, false, false);
+            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, true, false, false, false, false);
         }
         /// <summary>
         /// GetSortableFields will return the array of these field names. Use SetSortableField
@@ -384,7 +388,7 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
-            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, true, false, false);
+            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, true, false, false, false);
         }
         /// <summary>
         /// GetStatus will return the status\us of the dataSetName in the search engine. If the client is
@@ -405,6 +409,23 @@ namespace IndxCloudApi.Controllers
             if (status == null)
                 return BadRequest("GetStatus failed, status==null");
             return status;
+        }
+
+        /// <summary>
+        /// GetWordIndexingFields will return the array of these field names. Use SetWordIndexingFields
+        /// to assign this property. If the client is not authenticated null is returned.
+        /// </summary>
+        /// <param name="dataSetName"></param>
+        /// <returns>SearchState</returns>
+        [HttpGet("GetWordIndexingFields/{dataSetName}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [EnableCors("AllowAllHeaders")]
+        public ActionResult<string[]> GetWordIndexingFields(string dataSetName)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            return IndxCloudInternalApi.Manager.GetFields(dataSetName, userId, false, false, false, false, false, true);
         }
 
         /// <summary>
@@ -439,7 +460,21 @@ namespace IndxCloudApi.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return BadRequest("unauthorized");
-            IndxCloudInternalApi.Manager.DoIndex(dataSetName, userId);
+            if (!IndxCloudInternalApi.Manager.DoIndex(dataSetName, userId))
+            {
+                var status1 = IndxCloudInternalApi.Manager.GetState(dataSetName, userId);
+                if (status1 == null)
+                    return BadRequest("IndexDataSet failed, DoIndex returned false");
+                else
+                {
+                    if (status1.SystemState == SystemState.Created)
+                    {
+                        status1.ErrorMessage = "IndexDataSet failed, due to invalidstate, check Load operation completion status";
+                        return StatusCode(StatusCodes.Status409Conflict, status1);
+                    }
+                }
+            }
+
             var status = IndxCloudInternalApi.Manager.GetState(dataSetName, userId);
             if (status == null)
                 return BadRequest("IndexDataSet failed, status==null");
@@ -494,7 +529,8 @@ namespace IndxCloudApi.Controllers
             else
                 return BadRequest("LoadStreamAsync failed, Load returned false");
             if (!pm.Succeeded)
-                return BadRequest(pm.ErrorMessage);
+                return StatusCode(StatusCodes.Status422UnprocessableEntity, pm.ErrorMessage);
+
             return Ok();
         }
 
@@ -686,6 +722,38 @@ namespace IndxCloudApi.Controllers
             }
             return Ok();
         }
-        #endregion Public Methods
+        /// <summary>
+        /// SetWordIndexingFields will set the WordIndexing properties of the fields to true.
+        /// Every endpoint of this API will refer to one or more datasets.
+        /// </summary>
+        /// <param name="dataSetName"></param>
+        /// <param name="fields"></param>
+        /// <returns></returns>
+        [HttpPut("SetWordIndexingFields/{dataSetName}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [EnableCors("AllowAllHeaders")]
+        public IActionResult SetWordIndexingFields(string dataSetName, [FromBody] string[] fields)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            if (!FileNameValidity.IsValid(dataSetName))
+                return BadRequest("invalid dataSetName");
+            var matcher = IndxCloudInternalApi.Manager.FindSearchEngine(dataSetName, userId);
+            if (matcher == null)
+                return BadRequest("non existing dataSetName");
+            var df = matcher.DocumentFields;
+            if (df == null)
+                return BadRequest("SearchController.SetWordIndexingFields invalid status");
+            foreach (var item in fields)
+            {
+                var f = df.GetField(item);
+                if (f == null)
+                    return BadRequest("SearchController.SetWordIndexingFields non existing fieldname");
+                f.WordIndexing = true;
+            }
+            return Ok();
+        }
     }
+    #endregion Public Methods
 }
