@@ -255,6 +255,10 @@ namespace IndxCloudApi.Controllers
             var persistence = new Persistence(IndxCloudInternalApi.SearchDbConnectionString, dataSetName, userId);
             if (!persistence.DataSetExists())
                 return BadRequest("Attempt to delete non exixting dataset");
+
+            // Clean up in-memory SearchEngine instance before deleting from DB
+            IndxCloudInternalApi.Manager.DisposeDataSetInstance(dataSetName, userId);
+
             persistence.DeleteDataSet();
             return Ok();
         }

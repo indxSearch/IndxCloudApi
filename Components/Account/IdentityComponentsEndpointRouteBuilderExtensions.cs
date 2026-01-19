@@ -1,6 +1,8 @@
+using Indx.Storage;
 using IndxCloudApi.Components.Account.Pages;
 using IndxCloudApi.Components.Account.Pages.Manage;
 using IndxCloudApi.Data;
+using IndxCloudApi.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -57,20 +59,45 @@ namespace Microsoft.AspNetCore.Routing
                 ClaimsPrincipal user,
                 HttpContext context,
                 [FromServices] SignInManager<ApplicationUser> signInManager,
-                [FromServices] UserManager<ApplicationUser> userManager) =>
+                [FromServices] UserManager<ApplicationUser> userManager,
+                [FromServices] ILoggerFactory loggerFactory) =>
             {
+                var logger = loggerFactory.CreateLogger("DeleteAccount");
                 var appUser = await userManager.GetUserAsync(user);
                 if (appUser == null)
                 {
                     return Results.BadRequest("User not found");
                 }
 
+                var userId = appUser.Id;
+                logger.LogInformation($"Starting account deletion for user {userId}");
+
+                try
+                {
+                    // Step 1: Dispose all in-memory SearchEngine instances for this user
+                    IndxCloudInternalApi.Manager.DisposeUserInstances(userId);
+                    logger.LogInformation($"Disposed in-memory instances for user {userId}");
+
+                    // Step 2: Delete user from Search database (triggers CASCADE delete)
+                    var sqLiteManager = new SqLiteManager(IndxCloudInternalApi.SearchDbConnectionString);
+                    sqLiteManager.DeleteUser(userId);
+                    logger.LogInformation($"Deleted user {userId} from Search database");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Failed to delete user data from Search database: {ex.Message}");
+                    return Results.BadRequest($"Failed to delete user data: {ex.Message}");
+                }
+
+                // Step 3: Delete from Identity database
                 var result = await userManager.DeleteAsync(appUser);
                 if (!result.Succeeded)
                 {
+                    logger.LogError($"Failed to delete ApplicationUser: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                     return Results.BadRequest(string.Join(", ", result.Errors.Select(e => e.Description)));
                 }
 
+                logger.LogInformation($"Successfully deleted account for user {userId}");
                 await signInManager.SignOutAsync();
                 return TypedResults.LocalRedirect("~/");
             });

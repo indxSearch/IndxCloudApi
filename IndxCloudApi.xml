@@ -321,6 +321,21 @@
             <param name="userId"></param>
             <returns></returns>
         </member>
+        <member name="M:IndxCloudApi.Models.IndxCloudInternalApi.DisposeUserInstances(System.String)">
+            <summary>
+            Removes and disposes all SearchEngine instances for a specific user.
+            This should be called before deleting a user from the database.
+            </summary>
+            <param name="userId">The user ID to clean up</param>
+        </member>
+        <member name="M:IndxCloudApi.Models.IndxCloudInternalApi.DisposeDataSetInstance(System.String,System.String)">
+            <summary>
+            Removes and disposes a specific SearchEngine instance for a dataset.
+            This should be called before deleting a dataset from the database.
+            </summary>
+            <param name="dataSetName">The dataset name to clean up</param>
+            <param name="userId">The user ID that owns the dataset</param>
+        </member>
         <member name="T:IndxCloudApi.Models.LoginInfo">
             <summary>
             Class to support JSON serialization of user credentials
