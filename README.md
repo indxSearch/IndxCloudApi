@@ -58,10 +58,11 @@ This template provides a complete Blazor Server application with HTTP API, user 
 
 **IndxCloudApi** is part of the Indx Search ecosystem. These companion tools make it even easier to work with:
 
-### **IndxCloudLoader** (C#)
-A command-line tool for loading data into your IndxCloudApi instance. Perfect for batch importing documents, testing with sample data, or automating dataset creation.
+### **Data Loaders** (C# / Node.js)
+Command-line tools for loading data into your IndxCloudApi instance. Perfect for batch importing documents, testing with sample data, or automating dataset creation. Available in both C# and Node.js versions.
 
-- **Repository:** [IndxCloudLoader](https://github.com/indxSearch/IndxCloudLoader)
+- **IndxCloudLoader (C#):** [Repository](https://github.com/indxSearch/IndxCloudLoader)
+- **IndxNodeLoader (Node.js):** [Repository](https://github.com/indxSearch/IndxNodeLoader)
 - **Use cases:**
   - Bulk load JSON documents
   - Automated dataset setup for testing

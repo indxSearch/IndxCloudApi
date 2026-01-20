@@ -277,6 +277,9 @@ public class Program
             // Add operation filter for Search endpoint examples
             c.OperationFilter<IndxCloudApi.Swagger.SearchExamplesOperationFilter>();
 
+            // Add operation filter for SetSearchableFields endpoint examples
+            c.OperationFilter<IndxCloudApi.Swagger.SetSearchableFieldsExamplesOperationFilter>();
+
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
             {
                 Type = SecuritySchemeType.Http,

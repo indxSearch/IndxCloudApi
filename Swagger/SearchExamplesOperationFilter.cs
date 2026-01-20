@@ -17,8 +17,9 @@ namespace IndxCloudApi.Swagger
         /// <param name="context">The operation filter context</param>
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
-            // Only apply to the Search endpoint
-            if (context.ApiDescription.RelativePath?.Contains("Search") != true)
+            // Only apply to the Search endpoint (POST api/Search/{dataSetName})
+            if (context.ApiDescription.HttpMethod != "POST" ||
+                !context.ApiDescription.RelativePath?.StartsWith("api/Search/") == true)
                 return;
 
             // Find the CloudQuery parameter in the request body

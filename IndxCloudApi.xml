@@ -523,6 +523,18 @@
             <param name="operation">The OpenAPI operation to modify</param>
             <param name="context">The operation filter context</param>
         </member>
+        <member name="T:IndxCloudApi.Swagger.SetSearchableFieldsExamplesOperationFilter">
+            <summary>
+            Adds examples for the SetSearchableFields endpoint
+            </summary>
+        </member>
+        <member name="M:IndxCloudApi.Swagger.SetSearchableFieldsExamplesOperationFilter.Apply(Microsoft.OpenApi.Models.OpenApiOperation,Swashbuckle.AspNetCore.SwaggerGen.OperationFilterContext)">
+            <summary>
+            Applies examples to the SetSearchableFields endpoint operation
+            </summary>
+            <param name="operation">The OpenAPI operation to modify</param>
+            <param name="context">The operation filter context</param>
+        </member>
         <member name="T:IndxCloudApi.TextPlainInputFormatter">
             <summary>
             Class to ensure proper formatting for both json and plain text.
