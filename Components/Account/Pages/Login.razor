@@ -112,8 +112,17 @@ else if (externalLogins.Count > 0)
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    [SupplyParameterFromQuery]
+    private string? Error { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
+        // Set error message from query parameter if present
+        if (!string.IsNullOrEmpty(Error))
+        {
+            errorMessage = Error;
+        }
+
         // Get available external authentication schemes
         externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 

@@ -327,7 +327,9 @@ dotnet ef database update
 
 ### Restricting Registration
 
-By default, **anyone can register** for ease of getting started. You can easily restrict who can register by configuring the registration mode:
+By default, **anyone can register** for ease of getting started. You can easily restrict who can register by configuring the registration mode.
+
+**Note:** Registration restrictions apply to **all registration methods** including local accounts (username/password) and OAuth providers (Google/Microsoft). OAuth users cannot bypass domain restrictions.
 
 #### Open Registration (Default)
 ```json
@@ -372,6 +374,30 @@ Registration__Mode = "Closed"
 ```
 
 The registration page will automatically show appropriate messages to users based on your configuration.
+
+### Requiring Email Confirmation
+
+By default, users can sign in immediately after registration. You can require email confirmation before users can sign in:
+
+```json
+{
+  "Identity": {
+    "RequireConfirmedEmail": true
+  }
+}
+```
+
+**How it works:**
+- Users must click the confirmation link sent to their email before they can sign in
+- OAuth users (Google/Microsoft) are **automatically confirmed** since their email is already verified by the provider
+- Confirmation emails are sent using your configured email provider (Console, Azure Communication Services, etc.)
+- With Console email provider (default), check the console output for the confirmation link
+
+**Using Environment Variables (Production):**
+```bash
+# Azure App Service Application Settings
+Identity__RequireConfirmedEmail = "true"
+```
 
 **Production Best Practices:**
 - Change the JWT key (see Configuration section above)
