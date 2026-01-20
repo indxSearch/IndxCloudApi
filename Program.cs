@@ -137,7 +137,8 @@ public class Program
         // Identity registration (includes cookie authentication automatically)
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         {
-            options.SignIn.RequireConfirmedAccount = false;
+            // Read email confirmation requirement from configuration
+            options.SignIn.RequireConfirmedAccount = builder.Configuration.GetValue<bool>("Identity:RequireConfirmedEmail", false);
             options.Password.RequireDigit = true;
             options.Password.RequireLowercase = true;
             options.Password.RequireUppercase = true;

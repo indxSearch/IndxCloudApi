@@ -2,6 +2,7 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
+@using System.Reflection
 @using Indx.Api
 @using Indx.Storage
 @using IndxCloudApi.Models
@@ -10,7 +11,7 @@
 
 <PageTitle>Indx Cloud API</PageTitle>
 
-<h1>Indx Cloud API</h1>
+<h1>Indx Cloud API @GetVersion()</h1>
 
 <h2 style="margin-top: 40px;">Datasets</h2>
 
@@ -100,6 +101,20 @@ else
     private bool isLoading = true;
     private string? userId;
     private string? deleteConfirmDataset = null;
+
+    private string GetVersion()
+    {
+        var version = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion ?? "";
+
+        // Remove git commit hash (everything after '+')
+        var plusIndex = version.IndexOf('+');
+        if (plusIndex > 0)
+            version = version.Substring(0, plusIndex);
+
+        return version;
+    }
 
     protected override async Task OnInitializedAsync()
     {

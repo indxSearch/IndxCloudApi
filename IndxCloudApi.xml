@@ -80,6 +80,15 @@
             <param name="boost"></param>
             <returns></returns>
         </member>
+        <member name="M:IndxCloudApi.Controllers.SearchController.CreateOrOpen(System.String)">
+            <summary>
+            CreateOrOpen will create a data set where you can insert, save, index and search for DocumentJson.
+            Every endpoint of this API will refer to one or more datasets.
+            Uses default configuration.
+            </summary>
+            <param name="dataSetName"></param>
+            <returns></returns>
+        </member>
         <member name="M:IndxCloudApi.Controllers.SearchController.CreateOrOpen(System.String,System.Int32)">
             <summary>
             CreateOrOpen will create a data set where you can insert, save, index and search for DocumentJson.

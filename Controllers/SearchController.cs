@@ -158,6 +158,21 @@ namespace IndxCloudApi.Controllers
         /// <summary>
         /// CreateOrOpen will create a data set where you can insert, save, index and search for DocumentJson.
         /// Every endpoint of this API will refer to one or more datasets.
+        /// Uses default configuration.
+        /// </summary>
+        /// <param name="dataSetName"></param>
+        /// <returns></returns>
+        [HttpPut("CreateOrOpen/{dataSetName}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [EnableCors("AllowAllHeaders")]
+        public IActionResult CreateOrOpen(string dataSetName)
+        {
+            return CreateOrOpen(dataSetName, 400);
+        }
+
+        /// <summary>
+        /// CreateOrOpen will create a data set where you can insert, save, index and search for DocumentJson.
+        /// Every endpoint of this API will refer to one or more datasets.
         /// </summary>
         /// <param name="dataSetName"></param>
         /// <param name="configuration"></param>
